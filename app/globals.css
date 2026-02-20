@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --foreground: #18181b;
+  --sidebar-bg: #18181b;
+  --sidebar-fg: #a1a1aa;
+  --sidebar-active: #ffffff;
+  --positive: #16a34a;
+  --negative: #dc2626;
+  --info: #2563eb;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-info: var(--info);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Spreadsheet table styles */
+table.sheet {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+table.sheet th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  color: #71717a;
+  border-bottom: 2px solid #e4e4e7;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+table.sheet td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f4f4f5;
+}
+
+table.sheet tr:hover td {
+  background-color: #f4f4f5;
+}
+
+table.sheet td.num {
+  text-align: right;
+  font-family: var(--font-geist-mono);
+}
+
+table.sheet input {
+  width: 100%;
+  background: transparent;
+  outline: none;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #d4d4d8;
+  font-size: 0.875rem;
+}
+
+table.sheet input:focus {
+  border-bottom-color: #18181b;
+}
+
+table.sheet input[type="number"] {
+  text-align: right;
+  font-family: var(--font-geist-mono);
+}
+
+table.sheet select {
+  background: transparent;
+  outline: none;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #d4d4d8;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 3px;
 }

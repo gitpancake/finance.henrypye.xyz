@@ -1,65 +1,201 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useMemo } from "react";
+import { useFinance } from "@/contexts/FinanceContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import SummaryCard from "@/components/SummaryCard";
+import NetWorthBar from "@/components/NetWorthBar";
+import CurrencyBadge from "@/components/CurrencyBadge";
+import { formatMoney } from "@/lib/format";
+import type { Currency } from "@/lib/types";
+
+export default function Dashboard() {
+  const { state, isLoaded } = useFinance();
+  const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
+
+  const summary = useMemo(() => {
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0 };
+
+    const bankAssets = state.accounts
+      .filter((a) => a.type === "bank")
+      .reduce((sum, a) => sum + convert(a.balance, a.currency), 0);
+
+    const cryptoAssets = state.crypto.reduce((sum, c) => {
+      const priceUSD = c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
+      return sum + convertCrypto(c.amount, priceUSD);
+    }, 0);
+
+    const assets = bankAssets + cryptoAssets;
+
+    const creditCardDebt = state.accounts
+      .filter((a) => a.type === "credit_card")
+      .reduce((sum, a) => sum + convert(Math.abs(a.balance), a.currency), 0);
+
+    const personalDebt = state.debts.reduce(
+      (sum, d) => sum + convert(d.amount, d.currency),
+      0
+    );
+
+    const pendingIncoming = state.incomings
+      .filter((i) => i.status === "pending")
+      .reduce((sum, i) => sum + convert(i.amount, i.currency), 0);
+
+    return {
+      assets,
+      debts: creditCardDebt + personalDebt,
+      cash: bankAssets,
+      creditCards: creditCardDebt,
+      pendingIncoming,
+    };
+  }, [state, rates, convert, convertCrypto]);
+
+  if (!isLoaded) {
+    return <div className="text-sm text-zinc-400">Loading...</div>;
+  }
+
+  const netDebt = Math.max(0, summary.debts - summary.pendingIncoming);
+  const netWorth = summary.assets - netDebt;
+  const hasData =
+    state.accounts.length > 0 ||
+    state.debts.length > 0 ||
+    state.crypto.length > 0 ||
+    state.incomings.length > 0;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Dashboard</h1>
+
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        <SummaryCard label="Net Worth" value={netWorth} currency={displayCurrency} />
+        <SummaryCard label="Total Assets" value={summary.assets} currency={displayCurrency} />
+        <SummaryCard label="Total Debts" value={-summary.debts} currency={displayCurrency} />
+        <SummaryCard label="Pending Incoming" value={summary.pendingIncoming} currency={displayCurrency} colorOverride="text-amber-600" />
+        <SummaryCard label="Net Debt" value={-netDebt} currency={displayCurrency} />
+      </div>
+
+      <NetWorthBar
+        assets={summary.assets}
+        debts={summary.debts}
+        pendingIncoming={summary.pendingIncoming}
+        currency={displayCurrency}
+      />
+
+      {hasData && (
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-zinc-700 mb-2">Breakdown</h2>
+          <table className="sheet">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Currency</th>
+                <th style={{ textAlign: "right" }}>Native Amount</th>
+                <th style={{ textAlign: "right" }}>
+                  In {displayCurrency}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {state.accounts.map((a) => (
+                <tr key={a.id}>
+                  <td>{a.name}</td>
+                  <td>
+                    <span className="text-xs text-zinc-500">
+                      {a.type === "bank" ? "Bank" : "Credit Card"}
+                    </span>
+                  </td>
+                  <td><CurrencyBadge currency={a.currency} /></td>
+                  <td className="num">
+                    {formatMoney(
+                      a.type === "credit_card" ? -Math.abs(a.balance) : a.balance,
+                      a.currency
+                    )}
+                  </td>
+                  <td className="num">
+                    {formatMoney(
+                      a.type === "credit_card"
+                        ? -convert(Math.abs(a.balance), a.currency)
+                        : convert(a.balance, a.currency),
+                      displayCurrency
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {state.debts.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.creditor}</td>
+                  <td>
+                    <span className="text-xs text-zinc-500">Debt</span>
+                  </td>
+                  <td><CurrencyBadge currency={d.currency} /></td>
+                  <td className="num">
+                    {formatMoney(-d.amount, d.currency)}
+                  </td>
+                  <td className="num">
+                    {formatMoney(
+                      -convert(d.amount, d.currency),
+                      displayCurrency
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {state.incomings
+                .filter((i) => i.status === "pending")
+                .map((i) => (
+                  <tr key={i.id}>
+                    <td>{i.source}</td>
+                    <td>
+                      <span className="text-xs text-amber-600">Pending Incoming</span>
+                    </td>
+                    <td><CurrencyBadge currency={i.currency} /></td>
+                    <td className="num">
+                      {formatMoney(i.amount, i.currency)}
+                    </td>
+                    <td className="num">
+                      {formatMoney(
+                        convert(i.amount, i.currency),
+                        displayCurrency
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              {rates &&
+                state.crypto.map((c) => {
+                  const priceUSD =
+                    c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
+                  return (
+                    <tr key={c.id}>
+                      <td>{c.asset}</td>
+                      <td>
+                        <span className="text-xs text-zinc-500">Crypto</span>
+                      </td>
+                      <td>
+                        <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-600">
+                          {c.asset}
+                        </span>
+                      </td>
+                      <td className="num">
+                        {c.amount.toFixed(c.asset === "ETH" ? 4 : 2)} {c.asset}
+                      </td>
+                      <td className="num">
+                        {formatMoney(
+                          convertCrypto(c.amount, priceUSD),
+                          displayCurrency
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      )}
+
+      {!hasData && (
+        <div className="mt-8 text-center text-sm text-zinc-400">
+          Add accounts, debts, or crypto holdings to see your financial overview.
         </div>
-      </main>
+      )}
     </div>
   );
 }
