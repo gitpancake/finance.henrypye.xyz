@@ -13,6 +13,7 @@ import type {
   FinanceState,
   Account,
   Debt,
+  FamilyDebt,
   CryptoHolding,
   Incoming,
   MonthlyBudget,
@@ -28,6 +29,9 @@ import {
   insertDebt,
   updateDebt,
   deleteDebt,
+  insertFamilyDebt,
+  updateFamilyDebt,
+  deleteFamilyDebt,
   insertCrypto,
   updateCrypto,
   deleteCrypto,
@@ -50,6 +54,9 @@ type Action =
   | { type: "ADD_DEBT"; payload: Debt }
   | { type: "UPDATE_DEBT"; payload: Debt }
   | { type: "DELETE_DEBT"; payload: string }
+  | { type: "ADD_FAMILY_DEBT"; payload: FamilyDebt }
+  | { type: "UPDATE_FAMILY_DEBT"; payload: FamilyDebt }
+  | { type: "DELETE_FAMILY_DEBT"; payload: string }
   | { type: "ADD_CRYPTO"; payload: CryptoHolding }
   | { type: "UPDATE_CRYPTO"; payload: CryptoHolding }
   | { type: "DELETE_CRYPTO"; payload: string }
@@ -98,6 +105,21 @@ function reducer(state: FinanceState, action: Action): FinanceState {
       return {
         ...state,
         debts: state.debts.filter((d) => d.id !== action.payload),
+      };
+
+    case "ADD_FAMILY_DEBT":
+      return { ...state, familyDebts: [...state.familyDebts, action.payload] };
+    case "UPDATE_FAMILY_DEBT":
+      return {
+        ...state,
+        familyDebts: state.familyDebts.map((d) =>
+          d.id === action.payload.id ? action.payload : d
+        ),
+      };
+    case "DELETE_FAMILY_DEBT":
+      return {
+        ...state,
+        familyDebts: state.familyDebts.filter((d) => d.id !== action.payload),
       };
 
     case "ADD_CRYPTO":
@@ -230,6 +252,15 @@ function persistAction(action: Action) {
       break;
     case "DELETE_DEBT":
       deleteDebt(action.payload);
+      break;
+    case "ADD_FAMILY_DEBT":
+      insertFamilyDebt(action.payload);
+      break;
+    case "UPDATE_FAMILY_DEBT":
+      updateFamilyDebt(action.payload);
+      break;
+    case "DELETE_FAMILY_DEBT":
+      deleteFamilyDebt(action.payload);
       break;
     case "ADD_CRYPTO":
       insertCrypto(action.payload);

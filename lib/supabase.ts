@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import type {
   Account,
   Debt,
+  FamilyDebt,
   CryptoHolding,
   Incoming,
   BudgetLineItem,
@@ -53,6 +54,21 @@ function toDebt(row: Record<string, unknown>): Debt {
 
 function fromDebt(d: Debt) {
   return { id: d.id, creditor: d.creditor, currency: d.currency, amount: d.amount, notes: d.notes };
+}
+
+function toFamilyDebt(row: Record<string, unknown>): FamilyDebt {
+  return {
+    id: row.id as string,
+    familyMember: row.family_member as string,
+    description: (row.description as string) ?? "",
+    amount: Number(row.amount),
+    currency: row.currency as FamilyDebt["currency"],
+    notes: (row.notes as string) ?? "",
+  };
+}
+
+function fromFamilyDebt(d: FamilyDebt) {
+  return { id: d.id, family_member: d.familyMember, description: d.description, amount: d.amount, currency: d.currency, notes: d.notes };
 }
 
 function toCrypto(row: Record<string, unknown>): CryptoHolding {
@@ -131,9 +147,10 @@ function fromAnnualSub(s: AnnualSubscription) {
 // --- Fetch all ---
 
 export async function fetchAllData(): Promise<FinanceState> {
-  const [accountsRes, debtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes] = await Promise.all([
+  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes] = await Promise.all([
     supabase.from("finance_accounts").select("*"),
     supabase.from("finance_debts").select("*"),
+    supabase.from("finance_family_debts").select("*"),
     supabase.from("finance_crypto_holdings").select("*"),
     supabase.from("finance_incomings").select("*"),
     supabase.from("finance_budget_line_items").select("*"),
@@ -142,6 +159,7 @@ export async function fetchAllData(): Promise<FinanceState> {
 
   const accounts = (accountsRes.data ?? []).map(toAccount);
   const debts = (debtsRes.data ?? []).map(toDebt);
+  const familyDebts = (familyDebtsRes.data ?? []).map(toFamilyDebt);
   const crypto = (cryptoRes.data ?? []).map(toCrypto);
   const incomings = (incomingsRes.data ?? []).map(toIncoming);
   const annualSubscriptions = (annualSubsRes.data ?? []).map(toAnnualSub);
@@ -158,7 +176,7 @@ export async function fetchAllData(): Promise<FinanceState> {
     ([month, lineItems]) => ({ month, lineItems })
   );
 
-  return { accounts, debts, crypto, incomings, budgets, annualSubscriptions };
+  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions };
 }
 
 // --- Accounts ---
@@ -196,6 +214,23 @@ export async function updateDebt(d: Debt) {
 export async function deleteDebt(id: string) {
   const { error } = await supabase.from("finance_debts").delete().eq("id", id);
   if (error) console.error("deleteDebt:", error.message);
+}
+
+// --- Family Debts ---
+
+export async function insertFamilyDebt(d: FamilyDebt) {
+  const { error } = await supabase.from("finance_family_debts").insert(fromFamilyDebt(d));
+  if (error) console.error("insertFamilyDebt:", error.message);
+}
+
+export async function updateFamilyDebt(d: FamilyDebt) {
+  const { error } = await supabase.from("finance_family_debts").update(fromFamilyDebt(d)).eq("id", d.id);
+  if (error) console.error("updateFamilyDebt:", error.message);
+}
+
+export async function deleteFamilyDebt(id: string) {
+  const { error } = await supabase.from("finance_family_debts").delete().eq("id", id);
+  if (error) console.error("deleteFamilyDebt:", error.message);
 }
 
 // --- Crypto ---

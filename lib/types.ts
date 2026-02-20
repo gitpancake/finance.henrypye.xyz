@@ -22,6 +22,15 @@ export interface Debt {
   notes: string;
 }
 
+export interface FamilyDebt {
+  id: string;
+  familyMember: string;
+  description: string;
+  amount: number;
+  currency: Currency;
+  notes: string;
+}
+
 export interface CryptoHolding {
   id: string;
   asset: CryptoAsset;
@@ -75,6 +84,7 @@ export interface ExchangeRates {
 export interface FinanceState {
   accounts: Account[];
   debts: Debt[];
+  familyDebts: FamilyDebt[];
   crypto: CryptoHolding[];
   incomings: Incoming[];
   budgets: MonthlyBudget[];

@@ -59,6 +59,7 @@ export const EI_2026 = {
 export const DEFAULT_STATE: FinanceState = {
   accounts: [],
   debts: [],
+  familyDebts: [],
   crypto: [],
   incomings: [],
   budgets: [],
@@ -69,6 +70,7 @@ export const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/accounts", label: "Accounts" },
   { href: "/debts", label: "Debts" },
+  { href: "/family-debts", label: "Family" },
   { href: "/crypto", label: "Crypto" },
   { href: "/incoming", label: "Incoming" },
   { href: "/budget", label: "Budget" },
