@@ -14,7 +14,7 @@ export default function Dashboard() {
   const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
 
   const summary = useMemo(() => {
-    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0 };
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, annualSubCosts: 0 };
 
     const bankAssets = state.accounts
       .filter((a) => a.type === "bank")
@@ -40,12 +40,38 @@ export default function Dashboard() {
       .filter((i) => i.status === "pending")
       .reduce((sum, i) => sum + convert(i.amount, i.currency), 0);
 
+    // Annual costs: monthly expenses * 12 + pro-rated annual subscriptions
+    const latestBudget = [...state.budgets].sort((a, b) => b.month.localeCompare(a.month))[0];
+    const monthlyExpenses = latestBudget
+      ? latestBudget.lineItems
+          .filter((li) => li.category === "expense")
+          .reduce((sum, li) => sum + convert(li.amount, li.currency), 0)
+      : 0;
+
+    const now = new Date();
+    const annualSubCosts = state.annualSubscriptions.reduce((sum, sub) => {
+      const converted = convert(sub.amount, sub.currency);
+      if (!sub.nextRenewal) return sum + converted; // no date = assume yearly
+      const renewal = new Date(sub.nextRenewal);
+      const msUntil = renewal.getTime() - now.getTime();
+      const monthsUntil = Math.max(1, msUntil / (1000 * 60 * 60 * 24 * 30.44));
+      // If renewal is within 12 months, it's a yearly sub — full cost
+      // If renewal is further out (e.g. 18mo), it's a multi-year sub — pro-rate
+      const annualPortion = monthsUntil <= 12 ? converted : converted * (12 / monthsUntil);
+      return sum + annualPortion;
+    }, 0);
+
+    const annualCosts = monthlyExpenses * 12 + annualSubCosts;
+
     return {
       assets,
       debts: creditCardDebt + personalDebt,
       cash: bankAssets,
       creditCards: creditCardDebt,
       pendingIncoming,
+      annualCosts,
+      monthlyExpenses,
+      annualSubCosts,
     };
   }, [state, rates, convert, convertCrypto]);
 
@@ -65,12 +91,13 @@ export default function Dashboard() {
     <div>
       <h1 className="text-lg font-semibold text-zinc-900 mb-6">Dashboard</h1>
 
-      <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard label="Net Worth" value={netWorth} currency={displayCurrency} />
         <SummaryCard label="Total Assets" value={summary.assets} currency={displayCurrency} />
         <SummaryCard label="Total Debts" value={-summary.debts} currency={displayCurrency} />
         <SummaryCard label="Pending Incoming" value={summary.pendingIncoming} currency={displayCurrency} colorOverride="text-amber-600" />
         <SummaryCard label="Net Debt" value={-netDebt} currency={displayCurrency} />
+        <SummaryCard label="Annual Costs" value={-summary.annualCosts} currency={displayCurrency} />
       </div>
 
       <NetWorthBar
@@ -79,6 +106,37 @@ export default function Dashboard() {
         pendingIncoming={summary.pendingIncoming}
         currency={displayCurrency}
       />
+
+      {summary.annualCosts > 0 && (
+        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
+          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
+            Annual Costs Breakdown
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <div className="text-xs text-zinc-500">Monthly Expenses x 12</div>
+              <div className="font-mono text-sm font-semibold text-zinc-900">
+                {formatMoney(summary.monthlyExpenses * 12, displayCurrency)}
+              </div>
+              <div className="text-xs text-zinc-400">{formatMoney(summary.monthlyExpenses, displayCurrency)}/mo</div>
+            </div>
+            <div>
+              <div className="text-xs text-zinc-500">Annual Subscriptions</div>
+              <div className="font-mono text-sm font-semibold text-zinc-900">
+                {formatMoney(summary.annualSubCosts, displayCurrency)}
+              </div>
+              <div className="text-xs text-zinc-400">{state.annualSubscriptions.length} subscriptions</div>
+            </div>
+            <div>
+              <div className="text-xs text-zinc-500">Total Annual</div>
+              <div className="font-mono text-sm font-semibold text-negative">
+                {formatMoney(summary.annualCosts, displayCurrency)}
+              </div>
+              <div className="text-xs text-zinc-400">{formatMoney(summary.annualCosts / 12, displayCurrency)}/mo avg</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {hasData && (
         <div className="mt-6">
