@@ -44,6 +44,7 @@ export interface BudgetLineItem {
   currency: Currency;
   category: "income" | "expense";
   dayOfMonth: number | null;
+  recurring: boolean;
 }
 
 export interface MonthlyBudget {

@@ -14,7 +14,7 @@ export default function Dashboard() {
   const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
 
   const summary = useMemo(() => {
-    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, annualSubCosts: 0, monthlyRent: 0 };
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0 };
 
     const bankAssets = state.accounts
       .filter((a) => a.type === "bank")
@@ -40,16 +40,20 @@ export default function Dashboard() {
       .filter((i) => i.status === "pending")
       .reduce((sum, i) => sum + convert(i.amount, i.currency), 0);
 
-    // Annual costs: monthly expenses * 12 + pro-rated annual subscriptions
+    // Annual costs: recurring monthly expenses * 12 + one-off expenses + pro-rated annual subscriptions
     const latestBudget = [...state.budgets].sort((a, b) => b.month.localeCompare(a.month))[0];
-    const monthlyExpenses = latestBudget
-      ? latestBudget.lineItems
-          .filter((li) => li.category === "expense")
-          .reduce((sum, li) => sum + convert(li.amount, li.currency), 0)
-      : 0;
+    const expenseItems = latestBudget?.lineItems.filter((li) => li.category === "expense") ?? [];
+
+    const monthlyExpenses = expenseItems
+      .filter((li) => li.recurring)
+      .reduce((sum, li) => sum + convert(li.amount, li.currency), 0);
+
+    const oneOffExpenses = expenseItems
+      .filter((li) => !li.recurring)
+      .reduce((sum, li) => sum + convert(li.amount, li.currency), 0);
 
     const rentItem = latestBudget?.lineItems.find(
-      (li) => li.category === "expense" && li.label.toLowerCase() === "rent"
+      (li) => li.category === "expense" && li.recurring && li.label.toLowerCase() === "rent"
     );
     const monthlyRent = rentItem ? convert(rentItem.amount, rentItem.currency) : 0;
 
@@ -66,7 +70,7 @@ export default function Dashboard() {
       return sum + annualPortion;
     }, 0);
 
-    const annualCosts = monthlyExpenses * 12 + annualSubCosts;
+    const annualCosts = monthlyExpenses * 12 + oneOffExpenses + annualSubCosts;
 
     return {
       assets,
@@ -76,6 +80,7 @@ export default function Dashboard() {
       pendingIncoming,
       annualCosts,
       monthlyExpenses,
+      oneOffExpenses,
       annualSubCosts,
       monthlyRent,
     };
@@ -118,14 +123,23 @@ export default function Dashboard() {
           <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
             Annual Costs Breakdown
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <div>
-              <div className="text-xs text-zinc-500">Monthly Expenses x 12</div>
+              <div className="text-xs text-zinc-500">Recurring x 12</div>
               <div className="font-mono text-sm font-semibold text-zinc-900">
                 {formatMoney(summary.monthlyExpenses * 12, displayCurrency)}
               </div>
               <div className="text-xs text-zinc-400">{formatMoney(summary.monthlyExpenses, displayCurrency)}/mo</div>
             </div>
+            {summary.oneOffExpenses > 0 && (
+              <div>
+                <div className="text-xs text-zinc-500">One-off Expenses</div>
+                <div className="font-mono text-sm font-semibold text-zinc-900">
+                  {formatMoney(summary.oneOffExpenses, displayCurrency)}
+                </div>
+                <div className="text-xs text-zinc-400">not annualized</div>
+              </div>
+            )}
             {summary.monthlyRent > 0 && (
               <div>
                 <div className="text-xs text-zinc-500">Rent</div>

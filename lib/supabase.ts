@@ -117,6 +117,7 @@ function toBudgetItem(row: Record<string, unknown>): BudgetLineItem & { month: s
     currency: row.currency as BudgetLineItem["currency"],
     category: row.category as BudgetLineItem["category"],
     dayOfMonth: row.day_of_month != null ? Number(row.day_of_month) : null,
+    recurring: row.recurring !== false,
     month: row.month as string,
   };
 }
@@ -130,6 +131,7 @@ function fromBudgetItem(month: string, item: BudgetLineItem, userId: string) {
     currency: item.currency,
     category: item.category,
     day_of_month: item.dayOfMonth ?? null,
+    recurring: item.recurring,
     user_id: userId,
   };
 }

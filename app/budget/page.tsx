@@ -16,6 +16,7 @@ const expenseColumns: Column[] = [
   { key: "amount", label: "Amount", type: "number" },
   { key: "currency", label: "Currency", type: "select", options: ["CAD", "USD", "GBP", "EUR"] },
   { key: "dayOfMonth", label: "Day", type: "number", width: "70px" },
+  { key: "recurring", label: "Recurring", type: "checkbox", width: "80px" },
 ];
 
 function getCurrentMonth(): string {
@@ -89,6 +90,7 @@ export default function BudgetPage() {
             currency: incomeCurrency,
             category: "income",
             dayOfMonth: null,
+            recurring: true,
           },
         },
       });
@@ -138,6 +140,7 @@ export default function BudgetPage() {
       currency: (row.currency as Currency) || "CAD",
       category: "expense",
       dayOfMonth: day >= 1 && day <= 31 ? day : null,
+      recurring: row.recurring !== false,
     };
     dispatch({ type: "ADD_BUDGET_ITEM", payload: { month, item } });
   };
@@ -151,6 +154,7 @@ export default function BudgetPage() {
       currency: (row.currency as Currency) || "CAD",
       category: "expense",
       dayOfMonth: day >= 1 && day <= 31 ? day : null,
+      recurring: row.recurring !== false,
     };
     dispatch({ type: "UPDATE_BUDGET_ITEM", payload: { month, item } });
   };
@@ -250,7 +254,7 @@ export default function BudgetPage() {
         onAdd={handleAddExpense}
         onUpdate={handleUpdateExpense}
         onDelete={handleDelete}
-        defaultValues={{ currency: "CAD" }}
+        defaultValues={{ currency: "CAD", recurring: true }}
       />
 
       {/* Summary */}
