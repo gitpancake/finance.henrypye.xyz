@@ -277,91 +277,91 @@ function reducer(state: FinanceState, action: Action): FinanceState {
 }
 
 // Persist action to Supabase (fire-and-forget, optimistic)
-function persistAction(action: Action) {
+function persistAction(action: Action, userId: string) {
   switch (action.type) {
     case "ADD_ACCOUNT":
-      insertAccount(action.payload);
+      insertAccount(action.payload, userId);
       break;
     case "UPDATE_ACCOUNT":
-      updateAccount(action.payload);
+      updateAccount(action.payload, userId);
       break;
     case "DELETE_ACCOUNT":
-      deleteAccount(action.payload);
+      deleteAccount(action.payload, userId);
       break;
     case "ADD_DEBT":
-      insertDebt(action.payload);
+      insertDebt(action.payload, userId);
       break;
     case "UPDATE_DEBT":
-      updateDebt(action.payload);
+      updateDebt(action.payload, userId);
       break;
     case "DELETE_DEBT":
-      deleteDebt(action.payload);
+      deleteDebt(action.payload, userId);
       break;
     case "ADD_FAMILY_DEBT":
-      insertFamilyDebt(action.payload);
+      insertFamilyDebt(action.payload, userId);
       break;
     case "UPDATE_FAMILY_DEBT":
-      updateFamilyDebt(action.payload);
+      updateFamilyDebt(action.payload, userId);
       break;
     case "DELETE_FAMILY_DEBT":
-      deleteFamilyDebt(action.payload);
+      deleteFamilyDebt(action.payload, userId);
       break;
     case "ADD_CRYPTO":
-      insertCrypto(action.payload);
+      insertCrypto(action.payload, userId);
       break;
     case "UPDATE_CRYPTO":
-      updateCrypto(action.payload);
+      updateCrypto(action.payload, userId);
       break;
     case "DELETE_CRYPTO":
-      deleteCrypto(action.payload);
+      deleteCrypto(action.payload, userId);
       break;
     case "ADD_INCOMING":
-      insertIncoming(action.payload);
+      insertIncoming(action.payload, userId);
       break;
     case "UPDATE_INCOMING":
-      updateIncoming(action.payload);
+      updateIncoming(action.payload, userId);
       break;
     case "DELETE_INCOMING":
-      deleteIncoming(action.payload);
+      deleteIncoming(action.payload, userId);
       break;
     case "ADD_BUDGET_ITEM":
-      insertBudgetItem(action.payload.month, action.payload.item);
+      insertBudgetItem(action.payload.month, action.payload.item, userId);
       break;
     case "UPDATE_BUDGET_ITEM":
-      updateBudgetItem(action.payload.month, action.payload.item);
+      updateBudgetItem(action.payload.month, action.payload.item, userId);
       break;
     case "DELETE_BUDGET_ITEM":
-      deleteBudgetItem(action.payload.itemId);
+      deleteBudgetItem(action.payload.itemId, userId);
       break;
     case "SET_BUDGET":
-      setBudgetItems(action.payload.month, action.payload.lineItems);
+      setBudgetItems(action.payload.month, action.payload.lineItems, userId);
       break;
     case "ADD_ANNUAL_SUB":
-      insertAnnualSub(action.payload);
+      insertAnnualSub(action.payload, userId);
       break;
     case "UPDATE_ANNUAL_SUB":
-      updateAnnualSub(action.payload);
+      updateAnnualSub(action.payload, userId);
       break;
     case "DELETE_ANNUAL_SUB":
-      deleteAnnualSub(action.payload);
+      deleteAnnualSub(action.payload, userId);
       break;
     case "ADD_PET_EXPENSE":
-      insertPetExpense(action.payload);
+      insertPetExpense(action.payload, userId);
       break;
     case "UPDATE_PET_EXPENSE":
-      updatePetExpense(action.payload);
+      updatePetExpense(action.payload, userId);
       break;
     case "DELETE_PET_EXPENSE":
-      deletePetExpense(action.payload);
+      deletePetExpense(action.payload, userId);
       break;
     case "ADD_FAMILY_OWED":
-      insertFamilyOwed(action.payload);
+      insertFamilyOwed(action.payload, userId);
       break;
     case "UPDATE_FAMILY_OWED":
-      updateFamilyOwed(action.payload);
+      updateFamilyOwed(action.payload, userId);
       break;
     case "DELETE_FAMILY_OWED":
-      deleteFamilyOwed(action.payload);
+      deleteFamilyOwed(action.payload, userId);
       break;
   }
 }
@@ -378,7 +378,7 @@ const FinanceContext = createContext<FinanceContextValue>({
   isLoaded: false,
 });
 
-export function FinanceProvider({ children }: { children: ReactNode }) {
+export function FinanceProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [state, rawDispatch] = useReducer(reducer, DEFAULT_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
   const initialized = useRef(false);
@@ -387,7 +387,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const dispatch = (action: Action) => {
     rawDispatch(action);
     if (action.type !== "LOAD_STATE") {
-      persistAction(action);
+      persistAction(action, userId);
     }
   };
 
@@ -396,7 +396,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (initialized.current) return;
     initialized.current = true;
 
-    fetchAllData()
+    fetchAllData(userId)
       .then((data) => {
         rawDispatch({ type: "LOAD_STATE", payload: data });
       })
@@ -406,7 +406,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       .finally(() => {
         setIsLoaded(true);
       });
-  }, []);
+  }, [userId]);
 
   return (
     <FinanceContext.Provider value={{ state, dispatch, isLoaded }}>

@@ -1,9 +1,20 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { FinanceProvider } from "@/contexts/FinanceContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import Shell from "./Shell";
+
+interface UserInfo {
+  userId: string;
+  username: string;
+  isAdmin: boolean;
+}
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<"loading" | "locked" | "unlocked">("loading");
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -12,7 +23,14 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetch("/api/auth")
       .then((r) => r.json())
-      .then((d) => setStatus(d.authenticated ? "unlocked" : "locked"))
+      .then((d) => {
+        if (d.authenticated) {
+          setUser({ userId: d.userId, username: d.username, isAdmin: d.isAdmin });
+          setStatus("unlocked");
+        } else {
+          setStatus("locked");
+        }
+      })
       .catch(() => setStatus("locked"));
   }, []);
 
@@ -29,6 +47,8 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       });
 
       if (res.ok) {
+        const d = await res.json();
+        setUser({ userId: d.userId, username: d.username, isAdmin: d.isAdmin });
         setStatus("unlocked");
       } else {
         setError("Invalid credentials");
@@ -49,8 +69,16 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (status === "unlocked") {
-    return <>{children}</>;
+  if (status === "unlocked" && user) {
+    return (
+      <AuthProvider user={user}>
+        <FinanceProvider userId={user.userId}>
+          <CurrencyProvider>
+            <Shell>{children}</Shell>
+          </CurrencyProvider>
+        </FinanceProvider>
+      </AuthProvider>
+    );
   }
 
   return (

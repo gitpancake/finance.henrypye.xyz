@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { FinanceState } from "@/lib/types";
+import { getSession } from "@/lib/auth";
 
 const anthropic = new Anthropic();
 
@@ -74,6 +75,11 @@ function buildPrompt(data: FinanceState): string {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession();
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const { data, context } = (await req.json()) as { data: FinanceState; context?: string };
   const financialSummary = buildPrompt(data);
 

@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/constants";
 import CurrencyToggle from "./CurrencyToggle";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { rates, loading, error } = useCurrency();
+  const { user, logout } = useAuth();
 
   return (
     <div className="flex h-screen">
@@ -39,8 +41,20 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {user.isAdmin && (
+            <Link
+              href="/admin"
+              className={`rounded-md px-3 py-2 text-sm transition-colors ${
+                pathname.startsWith("/admin")
+                  ? "bg-zinc-800 text-white font-medium"
+                  : "hover:bg-zinc-800/50 hover:text-zinc-200"
+              }`}
+            >
+              Admin
+            </Link>
+          )}
         </div>
-        <div className="mt-auto px-5 py-4">
+        <div className="mt-auto px-5 py-4 space-y-3">
           {rates && (
             <div className="text-xs text-zinc-600">
               Updated{" "}
@@ -50,6 +64,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               })}
             </div>
           )}
+          <div className="border-t border-zinc-800 pt-3">
+            <div className="text-xs text-zinc-500 mb-2">{user.username}</div>
+            <button
+              onClick={logout}
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </nav>
 
