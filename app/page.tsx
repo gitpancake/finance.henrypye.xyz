@@ -14,7 +14,7 @@ export default function Dashboard() {
   const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
 
   const summary = useMemo(() => {
-    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, annualSubCosts: 0 };
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, annualSubCosts: 0, monthlyRent: 0 };
 
     const bankAssets = state.accounts
       .filter((a) => a.type === "bank")
@@ -48,6 +48,11 @@ export default function Dashboard() {
           .reduce((sum, li) => sum + convert(li.amount, li.currency), 0)
       : 0;
 
+    const rentItem = latestBudget?.lineItems.find(
+      (li) => li.category === "expense" && li.label.toLowerCase() === "rent"
+    );
+    const monthlyRent = rentItem ? convert(rentItem.amount, rentItem.currency) : 0;
+
     const now = new Date();
     const annualSubCosts = state.annualSubscriptions.reduce((sum, sub) => {
       const converted = convert(sub.amount, sub.currency);
@@ -72,6 +77,7 @@ export default function Dashboard() {
       annualCosts,
       monthlyExpenses,
       annualSubCosts,
+      monthlyRent,
     };
   }, [state, rates, convert, convertCrypto]);
 
@@ -112,7 +118,7 @@ export default function Dashboard() {
           <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
             Annual Costs Breakdown
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
               <div className="text-xs text-zinc-500">Monthly Expenses x 12</div>
               <div className="font-mono text-sm font-semibold text-zinc-900">
@@ -120,6 +126,15 @@ export default function Dashboard() {
               </div>
               <div className="text-xs text-zinc-400">{formatMoney(summary.monthlyExpenses, displayCurrency)}/mo</div>
             </div>
+            {summary.monthlyRent > 0 && (
+              <div>
+                <div className="text-xs text-zinc-500">Rent</div>
+                <div className="font-mono text-sm font-semibold text-zinc-900">
+                  {formatMoney(summary.monthlyRent * 12, displayCurrency)}
+                </div>
+                <div className="text-xs text-zinc-400">{formatMoney(summary.monthlyRent, displayCurrency)}/mo</div>
+              </div>
+            )}
             <div>
               <div className="text-xs text-zinc-500">Annual Subscriptions</div>
               <div className="font-mono text-sm font-semibold text-zinc-900">
