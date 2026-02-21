@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column } from "@/components/EditableTable";
+import SummaryCard from "@/components/SummaryCard";
 import { formatMoney, formatPercent } from "@/lib/format";
 import { calculateTax } from "@/lib/tax";
 import type { Currency, BudgetLineItem } from "@/lib/types";
@@ -253,59 +254,40 @@ export default function BudgetPage() {
       />
 
       {/* Summary */}
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-2">
-        <div className="grid grid-cols-6 gap-6">
-          <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wide">Annual Gross</div>
-            <div className="font-mono text-lg font-semibold text-zinc-700">
-              {formatMoney(totals.annualGross, displayCurrency)}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wide">Annual After Tax</div>
-            <div className="font-mono text-lg font-semibold text-positive">
-              {formatMoney(totals.annualNet, displayCurrency)}
-            </div>
-            {annualIncome > 0 && (
-              <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                {formatPercent(totals.tax.effectiveRate)} effective
-              </div>
-            )}
-          </div>
-          <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wide">Monthly After Tax</div>
-            <div className="font-mono text-lg font-semibold text-positive">
-              {formatMoney(totals.monthlyNet, displayCurrency)}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wide">Monthly Expenses</div>
-            <div className="font-mono text-lg font-semibold text-negative">
-              {formatMoney(totals.expenses, displayCurrency)}
-            </div>
-            {totals.annualSubsMonthly > 0 && (
-              <div className="text-xs text-zinc-400 font-mono mt-0.5">
-                + {formatMoney(totals.annualSubsMonthly, displayCurrency)} subs
-              </div>
-            )}
-          </div>
-          <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wide">Total Outgoings</div>
-            <div className="font-mono text-lg font-semibold text-negative">
-              {formatMoney(totals.totalMonthlyOut, displayCurrency)}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-zinc-500 uppercase tracking-wide">Monthly Remaining</div>
-            <div
-              className={`font-mono text-lg font-semibold ${
-                totals.net >= 0 ? "text-positive" : "text-negative"
-              }`}
-            >
-              {formatMoney(totals.net, displayCurrency)}
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-4 mt-4 sm:grid-cols-3 lg:grid-cols-6">
+        <SummaryCard
+          label="Annual Gross"
+          value={totals.annualGross}
+          currency={displayCurrency}
+          colorOverride="text-zinc-700"
+        />
+        <SummaryCard
+          label="Annual After Tax"
+          value={totals.annualNet}
+          currency={displayCurrency}
+          subtitle={annualIncome > 0 ? `${formatPercent(totals.tax.effectiveRate)} effective` : undefined}
+        />
+        <SummaryCard
+          label="Monthly After Tax"
+          value={totals.monthlyNet}
+          currency={displayCurrency}
+        />
+        <SummaryCard
+          label="Monthly Expenses"
+          value={-totals.expenses}
+          currency={displayCurrency}
+          subtitle={totals.annualSubsMonthly > 0 ? `+ ${formatMoney(totals.annualSubsMonthly, displayCurrency)} subs` : undefined}
+        />
+        <SummaryCard
+          label="Total Outgoings"
+          value={-totals.totalMonthlyOut}
+          currency={displayCurrency}
+        />
+        <SummaryCard
+          label="Monthly Remaining"
+          value={totals.net}
+          currency={displayCurrency}
+        />
       </div>
 
       {budget && budget.lineItems.length > 0 && (

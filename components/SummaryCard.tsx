@@ -8,9 +8,10 @@ interface SummaryCardProps {
   value: number;
   currency: Currency;
   colorOverride?: string;
+  subtitle?: string;
 }
 
-export default function SummaryCard({ label, value, currency, colorOverride }: SummaryCardProps) {
+export default function SummaryCard({ label, value, currency, colorOverride, subtitle }: SummaryCardProps) {
   const color = colorOverride ?? (value > 0 ? "text-positive" : value < 0 ? "text-negative" : "text-zinc-500");
 
   return (
@@ -21,6 +22,9 @@ export default function SummaryCard({ label, value, currency, colorOverride }: S
       <div className={`mt-1 font-mono text-lg font-semibold truncate lg:text-xl ${color}`} title={formatMoney(value, currency)}>
         {formatMoney(value, currency)}
       </div>
+      {subtitle && (
+        <div className="text-xs text-zinc-400 font-mono mt-0.5 truncate">{subtitle}</div>
+      )}
     </div>
   );
 }
