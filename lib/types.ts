@@ -71,6 +71,26 @@ export interface AnnualSubscription {
   notes: string;
 }
 
+export interface PetExpense {
+  id: string;
+  description: string;
+  amount: number;
+  currency: Currency;
+  date: string;
+  notes: string;
+}
+
+export interface FamilyOwed {
+  id: string;
+  person: string;
+  description: string;
+  amount: number;
+  paid: number;
+  currency: Currency;
+  paidOff: boolean;
+  notes: string;
+}
+
 export interface ExchangeRates {
   CAD: 1;
   USD: number;
@@ -89,6 +109,8 @@ export interface FinanceState {
   incomings: Incoming[];
   budgets: MonthlyBudget[];
   annualSubscriptions: AnnualSubscription[];
+  petExpenses: PetExpense[];
+  familyOwed: FamilyOwed[];
 }
 
 export interface TaxBreakdown {

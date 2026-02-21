@@ -19,6 +19,8 @@ import type {
   MonthlyBudget,
   BudgetLineItem,
   AnnualSubscription,
+  PetExpense,
+  FamilyOwed,
 } from "@/lib/types";
 import { DEFAULT_STATE } from "@/lib/constants";
 import {
@@ -45,6 +47,12 @@ import {
   insertAnnualSub,
   updateAnnualSub,
   deleteAnnualSub,
+  insertPetExpense,
+  updatePetExpense,
+  deletePetExpense,
+  insertFamilyOwed,
+  updateFamilyOwed,
+  deleteFamilyOwed,
 } from "@/lib/supabase";
 
 type Action =
@@ -70,6 +78,12 @@ type Action =
   | { type: "ADD_ANNUAL_SUB"; payload: AnnualSubscription }
   | { type: "UPDATE_ANNUAL_SUB"; payload: AnnualSubscription }
   | { type: "DELETE_ANNUAL_SUB"; payload: string }
+  | { type: "ADD_PET_EXPENSE"; payload: PetExpense }
+  | { type: "UPDATE_PET_EXPENSE"; payload: PetExpense }
+  | { type: "DELETE_PET_EXPENSE"; payload: string }
+  | { type: "ADD_FAMILY_OWED"; payload: FamilyOwed }
+  | { type: "UPDATE_FAMILY_OWED"; payload: FamilyOwed }
+  | { type: "DELETE_FAMILY_OWED"; payload: string }
   | { type: "LOAD_STATE"; payload: FinanceState };
 
 function reducer(state: FinanceState, action: Action): FinanceState {
@@ -227,6 +241,36 @@ function reducer(state: FinanceState, action: Action): FinanceState {
         annualSubscriptions: state.annualSubscriptions.filter((s) => s.id !== action.payload),
       };
 
+    case "ADD_PET_EXPENSE":
+      return { ...state, petExpenses: [...state.petExpenses, action.payload] };
+    case "UPDATE_PET_EXPENSE":
+      return {
+        ...state,
+        petExpenses: state.petExpenses.map((e) =>
+          e.id === action.payload.id ? action.payload : e
+        ),
+      };
+    case "DELETE_PET_EXPENSE":
+      return {
+        ...state,
+        petExpenses: state.petExpenses.filter((e) => e.id !== action.payload),
+      };
+
+    case "ADD_FAMILY_OWED":
+      return { ...state, familyOwed: [...state.familyOwed, action.payload] };
+    case "UPDATE_FAMILY_OWED":
+      return {
+        ...state,
+        familyOwed: state.familyOwed.map((o) =>
+          o.id === action.payload.id ? action.payload : o
+        ),
+      };
+    case "DELETE_FAMILY_OWED":
+      return {
+        ...state,
+        familyOwed: state.familyOwed.filter((o) => o.id !== action.payload),
+      };
+
     default:
       return state;
   }
@@ -300,6 +344,24 @@ function persistAction(action: Action) {
       break;
     case "DELETE_ANNUAL_SUB":
       deleteAnnualSub(action.payload);
+      break;
+    case "ADD_PET_EXPENSE":
+      insertPetExpense(action.payload);
+      break;
+    case "UPDATE_PET_EXPENSE":
+      updatePetExpense(action.payload);
+      break;
+    case "DELETE_PET_EXPENSE":
+      deletePetExpense(action.payload);
+      break;
+    case "ADD_FAMILY_OWED":
+      insertFamilyOwed(action.payload);
+      break;
+    case "UPDATE_FAMILY_OWED":
+      updateFamilyOwed(action.payload);
+      break;
+    case "DELETE_FAMILY_OWED":
+      deleteFamilyOwed(action.payload);
       break;
   }
 }

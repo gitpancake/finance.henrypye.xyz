@@ -3,6 +3,8 @@ import type {
   Account,
   Debt,
   FamilyDebt,
+  PetExpense,
+  FamilyOwed,
   CryptoHolding,
   Incoming,
   BudgetLineItem,
@@ -144,10 +146,42 @@ function fromAnnualSub(s: AnnualSubscription) {
   return { id: s.id, label: s.label, amount: s.amount, currency: s.currency, next_renewal: s.nextRenewal || null, notes: s.notes };
 }
 
+function toPetExpense(row: Record<string, unknown>): PetExpense {
+  return {
+    id: row.id as string,
+    description: (row.description as string) ?? "",
+    amount: Number(row.amount),
+    currency: row.currency as PetExpense["currency"],
+    date: (row.date as string) ?? "",
+    notes: (row.notes as string) ?? "",
+  };
+}
+
+function fromPetExpense(e: PetExpense) {
+  return { id: e.id, description: e.description, amount: e.amount, currency: e.currency, date: e.date || null, notes: e.notes };
+}
+
+function toFamilyOwed(row: Record<string, unknown>): FamilyOwed {
+  return {
+    id: row.id as string,
+    person: (row.person as string) ?? "",
+    description: (row.description as string) ?? "",
+    amount: Number(row.amount),
+    paid: Number(row.paid ?? 0),
+    currency: row.currency as FamilyOwed["currency"],
+    paidOff: (row.paid_off as boolean) ?? false,
+    notes: (row.notes as string) ?? "",
+  };
+}
+
+function fromFamilyOwed(o: FamilyOwed) {
+  return { id: o.id, person: o.person, description: o.description, amount: o.amount, paid: o.paid, currency: o.currency, paid_off: o.paidOff, notes: o.notes };
+}
+
 // --- Fetch all ---
 
 export async function fetchAllData(): Promise<FinanceState> {
-  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes] = await Promise.all([
+  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes] = await Promise.all([
     supabase.from("finance_accounts").select("*"),
     supabase.from("finance_debts").select("*"),
     supabase.from("finance_family_debts").select("*"),
@@ -155,6 +189,8 @@ export async function fetchAllData(): Promise<FinanceState> {
     supabase.from("finance_incomings").select("*"),
     supabase.from("finance_budget_line_items").select("*"),
     supabase.from("finance_annual_subscriptions").select("*"),
+    supabase.from("finance_pet_expenses").select("*"),
+    supabase.from("finance_family_owed").select("*"),
   ]);
 
   const accounts = (accountsRes.data ?? []).map(toAccount);
@@ -163,6 +199,8 @@ export async function fetchAllData(): Promise<FinanceState> {
   const crypto = (cryptoRes.data ?? []).map(toCrypto);
   const incomings = (incomingsRes.data ?? []).map(toIncoming);
   const annualSubscriptions = (annualSubsRes.data ?? []).map(toAnnualSub);
+  const petExpenses = (petRes.data ?? []).map(toPetExpense);
+  const familyOwed = (familyOwedRes.data ?? []).map(toFamilyOwed);
 
   // Group budget items by month
   const budgetItems = (budgetRes.data ?? []).map(toBudgetItem);
@@ -176,7 +214,7 @@ export async function fetchAllData(): Promise<FinanceState> {
     ([month, lineItems]) => ({ month, lineItems })
   );
 
-  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions };
+  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions, petExpenses, familyOwed };
 }
 
 // --- Accounts ---
@@ -334,5 +372,39 @@ export async function updateAnnualSub(s: AnnualSubscription) {
 export async function deleteAnnualSub(id: string) {
   const { error } = await supabase.from("finance_annual_subscriptions").delete().eq("id", id);
   if (error) console.error("deleteAnnualSub:", error.message);
+}
+
+// --- Pet Expenses ---
+
+export async function insertPetExpense(e: PetExpense) {
+  const { error } = await supabase.from("finance_pet_expenses").insert(fromPetExpense(e));
+  if (error) console.error("insertPetExpense:", error.message);
+}
+
+export async function updatePetExpense(e: PetExpense) {
+  const { error } = await supabase.from("finance_pet_expenses").update(fromPetExpense(e)).eq("id", e.id);
+  if (error) console.error("updatePetExpense:", error.message);
+}
+
+export async function deletePetExpense(id: string) {
+  const { error } = await supabase.from("finance_pet_expenses").delete().eq("id", id);
+  if (error) console.error("deletePetExpense:", error.message);
+}
+
+// --- Family Owed ---
+
+export async function insertFamilyOwed(o: FamilyOwed) {
+  const { error } = await supabase.from("finance_family_owed").insert(fromFamilyOwed(o));
+  if (error) console.error("insertFamilyOwed:", error.message);
+}
+
+export async function updateFamilyOwed(o: FamilyOwed) {
+  const { error } = await supabase.from("finance_family_owed").update(fromFamilyOwed(o)).eq("id", o.id);
+  if (error) console.error("updateFamilyOwed:", error.message);
+}
+
+export async function deleteFamilyOwed(id: string) {
+  const { error } = await supabase.from("finance_family_owed").delete().eq("id", id);
+  if (error) console.error("deleteFamilyOwed:", error.message);
 }
 

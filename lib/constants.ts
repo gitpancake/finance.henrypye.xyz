@@ -64,6 +64,8 @@ export const DEFAULT_STATE: FinanceState = {
   incomings: [],
   budgets: [],
   annualSubscriptions: [],
+  petExpenses: [],
+  familyOwed: [],
 };
 
 export const NAV_ITEMS = [
@@ -71,6 +73,8 @@ export const NAV_ITEMS = [
   { href: "/accounts", label: "Accounts" },
   { href: "/debts", label: "Debts" },
   { href: "/family-debts", label: "Family" },
+  { href: "/pet", label: "Pet" },
+  { href: "/family-owed", label: "Owed" },
   { href: "/crypto", label: "Crypto" },
   { href: "/incoming", label: "Incoming" },
   { href: "/budget", label: "Budget" },
