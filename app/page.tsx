@@ -65,7 +65,7 @@ export default function Dashboard() {
     <div>
       <h1 className="text-lg font-semibold text-zinc-900 mb-6">Dashboard</h1>
 
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 lg:grid-cols-5">
         <SummaryCard label="Net Worth" value={netWorth} currency={displayCurrency} />
         <SummaryCard label="Total Assets" value={summary.assets} currency={displayCurrency} />
         <SummaryCard label="Total Debts" value={-summary.debts} currency={displayCurrency} />
@@ -83,6 +83,7 @@ export default function Dashboard() {
       {hasData && (
         <div className="mt-6">
           <h2 className="text-sm font-semibold text-zinc-700 mb-2">Breakdown</h2>
+          <div className="overflow-x-auto">
           <table className="sheet">
             <thead>
               <tr>
@@ -188,6 +189,7 @@ export default function Dashboard() {
                 })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

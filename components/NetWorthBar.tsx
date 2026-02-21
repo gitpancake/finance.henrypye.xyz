@@ -59,7 +59,7 @@ export default function NetWorthBar({ assets, debts, pendingIncoming, currency }
           </div>
         )}
       </div>
-      <div className="mt-2 flex justify-between text-xs text-zinc-500">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
         <span className="text-green-600">Assets: {formatMoney(assets, currency)} ({formatPercent(assets / debts)})</span>
         {pendingIncoming > 0 && (
           <span className="text-amber-600">Pending: {formatMoney(pendingIncoming, currency)} ({formatPercent(pendingIncoming / debts)})</span>
