@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import EditableTable, { type Column } from "@/components/EditableTable";
+import EditableTable, { type Column, type UserOption } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, FamilyOwed } from "@/lib/types";
 
@@ -13,12 +14,25 @@ const columns: Column[] = [
   { key: "paid", label: "Paid", type: "number" },
   { key: "currency", label: "Currency", type: "select", options: ["CAD", "USD", "GBP", "EUR"] },
   { key: "paidOff", label: "Paid Off", type: "checkbox" },
+  { key: "linkedUserId", label: "Linked User", type: "user-select" },
   { key: "notes", label: "Notes", type: "text" },
 ];
 
 export default function FamilyOwedPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
+  const [platformUsers, setPlatformUsers] = useState<UserOption[]>([]);
+
+  useEffect(() => {
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPlatformUsers(data.map((u: { id: string; username: string }) => ({ value: u.id, label: u.username })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
 
@@ -55,6 +69,7 @@ export default function FamilyOwedPage() {
       currency: (row.currency as Currency) || "USD",
       paidOff: Boolean(row.paidOff),
       notes: String(row.notes || ""),
+      linkedUserId: (row.linkedUserId as string) || null,
     };
     dispatch({ type: "ADD_FAMILY_OWED", payload: item });
   };
@@ -71,6 +86,7 @@ export default function FamilyOwedPage() {
       currency: (row.currency as Currency) || existing.currency,
       paidOff: Boolean(row.paidOff),
       notes: String(row.notes || ""),
+      linkedUserId: (row.linkedUserId as string) || null,
     };
     dispatch({ type: "UPDATE_FAMILY_OWED", payload: updated });
   };
@@ -79,7 +95,7 @@ export default function FamilyOwedPage() {
     <div>
       <h1 className="text-lg font-semibold text-zinc-900 mb-1">Family Owed</h1>
       <p className="text-xs text-zinc-400 mb-6">
-        Money owed to you by family/partner. Not included in dashboard totals.
+        Money owed to you by family/partner. Link to a platform user to show it in their Family Debts.
       </p>
 
       <EditableTable
@@ -90,6 +106,7 @@ export default function FamilyOwedPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_FAMILY_OWED", payload: id })}
         defaultValues={{ currency: "USD", paid: 0, paidOff: false }}
+        usersData={platformUsers}
       />
 
       {items.length > 0 && (

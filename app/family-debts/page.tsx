@@ -5,7 +5,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, FamilyDebt } from "@/lib/types";
-import { CURRENCIES } from "@/lib/constants";
 
 const columns: Column[] = [
   { key: "familyMember", label: "Family Member", type: "text" },
@@ -21,7 +20,10 @@ export default function FamilyDebtsPage() {
 
   if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
 
-  // Group by family member
+  const manualDebts = state.familyDebts.filter((d) => !d.linkedOwedId);
+  const linkedDebts = state.familyDebts.filter((d) => !!d.linkedOwedId);
+
+  // Group all debts by family member for summary
   const byMember = new Map<string, FamilyDebt[]>();
   for (const d of state.familyDebts) {
     const key = d.familyMember || "Unknown";
@@ -47,12 +49,15 @@ export default function FamilyDebtsPage() {
       currency: (row.currency as Currency) || "CAD",
       amount: Math.abs(Number(row.amount) || 0),
       notes: String(row.notes || ""),
+      linkedOwedId: null,
+      paid: null,
+      paidOff: null,
     };
     dispatch({ type: "ADD_FAMILY_DEBT", payload: debt });
   };
 
   const handleUpdate = (row: Record<string, unknown>) => {
-    const existing = state.familyDebts.find((d) => d.id === row.id);
+    const existing = manualDebts.find((d) => d.id === row.id);
     if (!existing) return;
     const updated: FamilyDebt = {
       ...existing,
@@ -75,12 +80,59 @@ export default function FamilyDebtsPage() {
       <EditableTable
         title="Family Loans"
         columns={columns}
-        rows={state.familyDebts}
+        rows={manualDebts}
         onAdd={handleAdd}
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_FAMILY_DEBT", payload: id })}
         defaultValues={{ currency: "CAD" }}
       />
+
+      {linkedDebts.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-sm font-semibold text-zinc-700">Linked Debts</h2>
+            <span className="text-xs bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-mono">
+              read-only
+            </span>
+          </div>
+          <table className="sheet">
+            <thead>
+              <tr>
+                <th>Creditor</th>
+                <th>Description</th>
+                <th style={{ width: "90px" }}>Amount</th>
+                <th style={{ width: "90px" }}>Paid</th>
+                <th style={{ width: "90px" }}>Remaining</th>
+                <th style={{ width: "70px" }}>Currency</th>
+                <th style={{ width: "70px" }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linkedDebts.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.familyMember}</td>
+                  <td>{d.description}</td>
+                  <td className="num">{formatMoney(d.amount, d.currency)}</td>
+                  <td className="num">{formatMoney(d.paid ?? 0, d.currency)}</td>
+                  <td className="num">{formatMoney(d.amount - (d.paid ?? 0), d.currency)}</td>
+                  <td>
+                    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono">
+                      {d.currency}
+                    </span>
+                  </td>
+                  <td>
+                    {d.paidOff ? (
+                      <span className="text-xs text-green-600 font-medium">Paid off</span>
+                    ) : (
+                      <span className="text-xs text-amber-600 font-medium">Outstanding</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {state.familyDebts.length > 0 && (
         <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">

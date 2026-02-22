@@ -29,6 +29,9 @@ export interface FamilyDebt {
   amount: number;
   currency: Currency;
   notes: string;
+  linkedOwedId: string | null;
+  paid: number | null;
+  paidOff: boolean | null;
 }
 
 export interface CryptoHolding {
@@ -90,6 +93,7 @@ export interface FamilyOwed {
   currency: Currency;
   paidOff: boolean;
   notes: string;
+  linkedUserId: string | null;
 }
 
 export interface ExchangeRates {

@@ -7,13 +7,18 @@ import { CURRENCIES } from "@/lib/constants";
 export interface Column {
   key: string;
   label: string;
-  type: "text" | "number" | "select" | "checkbox" | "date";
+  type: "text" | "number" | "select" | "checkbox" | "date" | "user-select";
   options?: string[];
   width?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = { id: string; [key: string]: any };
+
+export interface UserOption {
+  value: string;
+  label: string;
+}
 
 interface EditableTableProps {
   title: string;
@@ -23,6 +28,7 @@ interface EditableTableProps {
   onUpdate: (row: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
   defaultValues?: Record<string, unknown>;
+  usersData?: UserOption[];
 }
 
 function InlineRow({
@@ -32,6 +38,7 @@ function InlineRow({
   onCancel,
   onDelete,
   isNew,
+  usersData,
 }: {
   columns: Column[];
   data: Record<string, unknown>;
@@ -39,6 +46,7 @@ function InlineRow({
   onCancel?: () => void;
   onDelete?: () => void;
   isNew?: boolean;
+  usersData?: UserOption[];
 }) {
   const [editing, setEditing] = useState(isNew ?? false);
   const [values, setValues] = useState<Record<string, unknown>>(data);
@@ -91,6 +99,10 @@ function InlineRow({
             ) : col.type === "select" ? (
               <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono">
                 {String(values[col.key] ?? "")}
+              </span>
+            ) : col.type === "user-select" ? (
+              <span className="text-xs text-zinc-500">
+                {usersData?.find((u) => u.value === values[col.key])?.label ?? "—"}
               </span>
             ) : col.type === "date" ? (
               values[col.key]
@@ -147,6 +159,21 @@ function InlineRow({
               {(col.options ?? CURRENCIES).map((opt) => (
                 <option key={opt} value={opt}>
                   {opt}
+                </option>
+              ))}
+            </select>
+          ) : col.type === "user-select" ? (
+            <select
+              value={String(values[col.key] ?? "")}
+              onChange={(e) =>
+                setValues({ ...values, [col.key]: e.target.value || null })
+              }
+              onKeyDown={handleKeyDown}
+            >
+              <option value="">— none —</option>
+              {(usersData ?? []).map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
                 </option>
               ))}
             </select>
@@ -211,6 +238,7 @@ export default function EditableTable({
   onUpdate,
   onDelete,
   defaultValues,
+  usersData,
 }: EditableTableProps) {
   const [showAdd, setShowAdd] = useState(false);
 
@@ -220,6 +248,7 @@ export default function EditableTable({
       if (col.type === "number") defaults[col.key] = "";
       else if (col.type === "checkbox") defaults[col.key] = false;
       else if (col.type === "select") defaults[col.key] = col.options?.[0] ?? "CAD";
+      else if (col.type === "user-select") defaults[col.key] = null;
       else if (col.type === "date") defaults[col.key] = "";
       else defaults[col.key] = "";
     }
@@ -257,6 +286,7 @@ export default function EditableTable({
               data={row}
               onSave={onUpdate}
               onDelete={() => onDelete(row.id as string)}
+              usersData={usersData}
             />
           ))}
           {showAdd && (
@@ -269,6 +299,7 @@ export default function EditableTable({
               }}
               onCancel={() => setShowAdd(false)}
               isNew
+              usersData={usersData}
             />
           )}
           {rows.length === 0 && !showAdd && (

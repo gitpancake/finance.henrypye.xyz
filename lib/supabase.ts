@@ -67,6 +67,23 @@ function toFamilyDebt(row: Record<string, unknown>): FamilyDebt {
     amount: Number(row.amount),
     currency: row.currency as FamilyDebt["currency"],
     notes: (row.notes as string) ?? "",
+    linkedOwedId: null,
+    paid: null,
+    paidOff: null,
+  };
+}
+
+function linkedOwedToFamilyDebt(row: Record<string, unknown>, creditorUsername: string): FamilyDebt {
+  return {
+    id: `linked-${row.id as string}`,
+    familyMember: creditorUsername,
+    description: (row.description as string) ?? "",
+    amount: Number(row.amount),
+    currency: row.currency as FamilyDebt["currency"],
+    notes: (row.person as string) ?? "",
+    linkedOwedId: row.id as string,
+    paid: Number(row.paid ?? 0),
+    paidOff: (row.paid_off as boolean) ?? false,
   };
 }
 
@@ -176,17 +193,18 @@ function toFamilyOwed(row: Record<string, unknown>): FamilyOwed {
     currency: row.currency as FamilyOwed["currency"],
     paidOff: (row.paid_off as boolean) ?? false,
     notes: (row.notes as string) ?? "",
+    linkedUserId: (row.linked_user_id as string) ?? null,
   };
 }
 
 function fromFamilyOwed(o: FamilyOwed, userId: string) {
-  return { id: o.id, person: o.person, description: o.description, amount: o.amount, paid: o.paid, currency: o.currency, paid_off: o.paidOff, notes: o.notes, user_id: userId };
+  return { id: o.id, person: o.person, description: o.description, amount: o.amount, paid: o.paid, currency: o.currency, paid_off: o.paidOff, notes: o.notes, user_id: userId, linked_user_id: o.linkedUserId ?? null };
 }
 
 // --- Fetch all ---
 
 export async function fetchAllData(userId: string): Promise<FinanceState> {
-  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes] = await Promise.all([
+  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes, linkedDebtsRes, usersRes] = await Promise.all([
     supabase.from("finance_accounts").select("*").eq("user_id", userId),
     supabase.from("finance_debts").select("*").eq("user_id", userId),
     supabase.from("finance_family_debts").select("*").eq("user_id", userId),
@@ -196,11 +214,26 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
     supabase.from("finance_annual_subscriptions").select("*").eq("user_id", userId),
     supabase.from("finance_pet_expenses").select("*").eq("user_id", userId),
     supabase.from("finance_family_owed").select("*").eq("user_id", userId),
+    // Cross-user: debts linked to this user from other users' family_owed
+    supabase.from("finance_family_owed").select("*").eq("linked_user_id", userId),
+    // Fetch usernames for creditor display
+    supabase.from("finance_users").select("id, username"),
   ]);
+
+  // Build username lookup for linked debts
+  const usernameMap = new Map<string, string>();
+  for (const u of usersRes.data ?? []) {
+    usernameMap.set(u.id as string, u.username as string);
+  }
 
   const accounts = (accountsRes.data ?? []).map(toAccount);
   const debts = (debtsRes.data ?? []).map(toDebt);
-  const familyDebts = (familyDebtsRes.data ?? []).map(toFamilyDebt);
+  const manualFamilyDebts = (familyDebtsRes.data ?? []).map(toFamilyDebt);
+  const linkedFamilyDebts = (linkedDebtsRes.data ?? []).map((row) => {
+    const creditorUsername = usernameMap.get(row.user_id as string) ?? "Unknown";
+    return linkedOwedToFamilyDebt(row, creditorUsername);
+  });
+  const familyDebts = [...manualFamilyDebts, ...linkedFamilyDebts];
   const crypto = (cryptoRes.data ?? []).map(toCrypto);
   const incomings = (incomingsRes.data ?? []).map(toIncoming);
   const annualSubscriptions = (annualSubsRes.data ?? []).map(toAnnualSub);
