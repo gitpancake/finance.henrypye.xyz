@@ -348,67 +348,77 @@ export default function BudgetPage() {
             {remaining.items.length} expense{remaining.items.length !== 1 && "s"} still to come (day {today + 1}–31)
           </div>
 
-          {remaining.byAccount.map((group) => (
-            <div key={group.accountId ?? "unassigned"} className="mb-4 last:mb-0">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-zinc-700">{group.accountName}</span>
-                  {group.accountBalance !== null && group.accountCurrency && (
-                    <span className="text-xs text-zinc-400">
-                      Balance: {formatMoney(group.accountBalance, displayCurrency)}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-semibold text-negative">
-                    {formatMoney(group.remaining, displayCurrency)}
-                  </span>
-                  {group.deficit !== null && (
-                    group.deficit > 0 ? (
-                      <span className="text-xs font-medium text-red-600 bg-red-50 rounded px-1.5 py-0.5">
-                        Top up {formatMoney(group.deficit, displayCurrency)}
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5">
-                        Covered
-                      </span>
-                    )
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1">
-                {group.items
-                  .sort((a, b) => (a.dayOfMonth ?? 0) - (b.dayOfMonth ?? 0))
-                  .map((item) => (
-                    <div key={item.id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="text-zinc-700">{item.label}</span>
-                        <span className="text-xs text-zinc-400">
-                          Day {item.dayOfMonth}
+          {remaining.byAccount.map((group) => {
+            const afterExpenses = group.accountBalance !== null
+              ? group.accountBalance - group.remaining
+              : null;
+            return (
+              <div key={group.accountId ?? "unassigned"} className="mb-5 last:mb-0">
+                <div className="text-sm font-medium text-zinc-700 mb-2">{group.accountName}</div>
+
+                {group.accountBalance !== null && (
+                  <div className="grid grid-cols-3 gap-4 mb-3 rounded bg-zinc-50 px-3 py-2">
+                    <div>
+                      <div className="text-xs text-zinc-400">Current Balance</div>
+                      <div className="font-mono text-sm font-semibold text-zinc-900">
+                        {formatMoney(group.accountBalance, displayCurrency)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-400">Still to Come</div>
+                      <div className="font-mono text-sm font-semibold text-zinc-700">
+                        -{formatMoney(group.remaining, displayCurrency)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-zinc-400">After Expenses</div>
+                      <div className={`font-mono text-sm font-semibold ${afterExpenses !== null && afterExpenses < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                        {formatMoney(afterExpenses ?? 0, displayCurrency)}
+                      </div>
+                      {afterExpenses !== null && afterExpenses < 0 && (
+                        <div className="text-xs font-medium text-red-600 mt-0.5">
+                          Top up {formatMoney(Math.abs(afterExpenses), displayCurrency)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  {group.items
+                    .sort((a, b) => (a.dayOfMonth ?? 0) - (b.dayOfMonth ?? 0))
+                    .map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-zinc-700">{item.label}</span>
+                          <span className="text-xs text-zinc-400">
+                            Day {item.dayOfMonth}
+                          </span>
+                        </div>
+                        <span className="font-mono text-zinc-700">
+                          {formatMoney(convert(item.amount, item.currency), displayCurrency)}
                         </span>
                       </div>
-                      <span className="font-mono text-negative">
-                        {formatMoney(item.amount, item.currency)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-              {group.accountBalance !== null && (
-                <div className="mt-2 h-1.5 rounded-full bg-zinc-100 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      group.deficit !== null && group.deficit > 0
-                        ? "bg-red-400"
-                        : "bg-emerald-400"
-                    }`}
-                    style={{
-                      width: `${Math.min(100, (group.remaining / group.accountBalance) * 100)}%`,
-                    }}
-                  />
+                    ))}
                 </div>
-              )}
-            </div>
-          ))}
+
+                {group.accountBalance !== null && (
+                  <div className="mt-2 h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        afterExpenses !== null && afterExpenses < 0
+                          ? "bg-red-400"
+                          : "bg-emerald-400"
+                      }`}
+                      style={{
+                        width: `${Math.min(100, (group.remaining / group.accountBalance) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
