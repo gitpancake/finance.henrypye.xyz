@@ -102,7 +102,7 @@ function InlineRow({
           </td>
         ))}
         <td className="w-20">
-          <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setEditing(true)}
               className="text-xs text-zinc-400 hover:text-zinc-900"
