@@ -65,6 +65,44 @@ export default function BudgetPage() {
   const annualIncome = parseFloat(incomeInput) || 0;
   const expenseItems = budget?.lineItems.filter((li) => li.category === "expense") ?? [];
 
+  const isCurrentMonth = month === getCurrentMonth();
+  const today = new Date().getDate();
+
+  const remaining = useMemo(() => {
+    if (!isCurrentMonth) return { items: [], byAccount: [] };
+
+    const items = expenseItems.filter(
+      (li) => li.dayOfMonth !== null && li.dayOfMonth > today
+    );
+
+    // Group by accountId
+    const accountMap = new Map<string | null, { items: BudgetLineItem[]; total: number }>();
+    for (const item of items) {
+      const key = item.accountId;
+      const entry = accountMap.get(key) || { items: [], total: 0 };
+      entry.items.push(item);
+      entry.total += convert(item.amount, item.currency);
+      accountMap.set(key, entry);
+    }
+
+    const byAccount = Array.from(accountMap.entries()).map(([accountId, data]) => {
+      const account = accountId ? state.accounts.find((a) => a.id === accountId) : null;
+      const accountBalance = account ? convert(account.balance, account.currency) : null;
+      const deficit = accountBalance !== null ? data.total - accountBalance : null;
+      return {
+        accountId,
+        accountName: account?.name ?? "Unassigned",
+        accountCurrency: account?.currency ?? null,
+        accountBalance,
+        remaining: data.total,
+        deficit,
+        items: data.items,
+      };
+    });
+
+    return { items, byAccount };
+  }, [isCurrentMonth, expenseItems, today, state.accounts, convert]);
+
   const saveIncome = () => {
     if (incomeItem) {
       // Update existing
@@ -300,6 +338,79 @@ export default function BudgetPage() {
           currency={displayCurrency}
         />
       </div>
+
+      {isCurrentMonth && remaining.items.length > 0 && (
+        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
+          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
+            Remaining This Month
+          </div>
+          <div className="text-xs text-zinc-400 mb-3">
+            {remaining.items.length} expense{remaining.items.length !== 1 && "s"} still to come (day {today + 1}–31)
+          </div>
+
+          {remaining.byAccount.map((group) => (
+            <div key={group.accountId ?? "unassigned"} className="mb-4 last:mb-0">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-700">{group.accountName}</span>
+                  {group.accountBalance !== null && group.accountCurrency && (
+                    <span className="text-xs text-zinc-400">
+                      Balance: {formatMoney(group.accountBalance, displayCurrency)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-semibold text-negative">
+                    {formatMoney(group.remaining, displayCurrency)}
+                  </span>
+                  {group.deficit !== null && (
+                    group.deficit > 0 ? (
+                      <span className="text-xs font-medium text-red-600 bg-red-50 rounded px-1.5 py-0.5">
+                        Top up {formatMoney(group.deficit, displayCurrency)}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5">
+                        Covered
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                {group.items
+                  .sort((a, b) => (a.dayOfMonth ?? 0) - (b.dayOfMonth ?? 0))
+                  .map((item) => (
+                    <div key={item.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-zinc-700">{item.label}</span>
+                        <span className="text-xs text-zinc-400">
+                          Day {item.dayOfMonth}
+                        </span>
+                      </div>
+                      <span className="font-mono text-negative">
+                        {formatMoney(item.amount, item.currency)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+              {group.accountBalance !== null && (
+                <div className="mt-2 h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      group.deficit !== null && group.deficit > 0
+                        ? "bg-red-400"
+                        : "bg-emerald-400"
+                    }`}
+                    style={{
+                      width: `${Math.min(100, (group.remaining / group.accountBalance) * 100)}%`,
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {budget && budget.lineItems.length > 0 && (
         <div className="mt-4 flex justify-end">
