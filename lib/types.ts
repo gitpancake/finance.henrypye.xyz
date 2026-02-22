@@ -84,6 +84,7 @@ export interface PetExpense {
   currency: Currency;
   date: string;
   notes: string;
+  sharedWithUserId: string | null;
 }
 
 export interface FamilyOwed {
@@ -108,6 +109,10 @@ export interface ExchangeRates {
   lastUpdated: string;
 }
 
+export interface SharedPetExpense extends PetExpense {
+  ownerName: string;
+}
+
 export interface FinanceState {
   accounts: Account[];
   debts: Debt[];
@@ -117,6 +122,7 @@ export interface FinanceState {
   budgets: MonthlyBudget[];
   annualSubscriptions: AnnualSubscription[];
   petExpenses: PetExpense[];
+  sharedPetExpenses: SharedPetExpense[];
   familyOwed: FamilyOwed[];
 }
 

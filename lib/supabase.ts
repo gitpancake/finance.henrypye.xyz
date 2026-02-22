@@ -179,11 +179,12 @@ function toPetExpense(row: Record<string, unknown>): PetExpense {
     currency: row.currency as PetExpense["currency"],
     date: (row.date as string) ?? "",
     notes: (row.notes as string) ?? "",
+    sharedWithUserId: (row.shared_with_user_id as string) ?? null,
   };
 }
 
 function fromPetExpense(e: PetExpense, userId: string) {
-  return { id: e.id, description: e.description, amount: e.amount, currency: e.currency, date: e.date || null, notes: e.notes, user_id: userId };
+  return { id: e.id, description: e.description, amount: e.amount, currency: e.currency, date: e.date || null, notes: e.notes, user_id: userId, shared_with_user_id: e.sharedWithUserId ?? null };
 }
 
 function toFamilyOwed(row: Record<string, unknown>): FamilyOwed {
@@ -207,7 +208,7 @@ function fromFamilyOwed(o: FamilyOwed, userId: string) {
 // --- Fetch all ---
 
 export async function fetchAllData(userId: string): Promise<FinanceState> {
-  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes, linkedDebtsRes, usersRes] = await Promise.all([
+  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes, linkedDebtsRes, sharedPetRes, usersRes] = await Promise.all([
     supabase.from("finance_accounts").select("*").eq("user_id", userId),
     supabase.from("finance_debts").select("*").eq("user_id", userId),
     supabase.from("finance_family_debts").select("*").eq("user_id", userId),
@@ -219,6 +220,8 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
     supabase.from("finance_family_owed").select("*").eq("user_id", userId),
     // Cross-user: debts linked to this user from other users' family_owed
     supabase.from("finance_family_owed").select("*").eq("linked_user_id", userId),
+    // Cross-user: pet expenses shared with this user
+    supabase.from("finance_pet_expenses").select("*").eq("shared_with_user_id", userId),
     // Fetch usernames for creditor display
     supabase.from("finance_users").select("id, username"),
   ]);
@@ -241,6 +244,10 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
   const incomings = (incomingsRes.data ?? []).map(toIncoming);
   const annualSubscriptions = (annualSubsRes.data ?? []).map(toAnnualSub);
   const petExpenses = (petRes.data ?? []).map(toPetExpense);
+  const sharedPetExpenses = (sharedPetRes.data ?? []).map((row) => ({
+    ...toPetExpense(row),
+    ownerName: usernameMap.get(row.user_id as string) ?? "Unknown",
+  }));
   const familyOwed = (familyOwedRes.data ?? []).map(toFamilyOwed);
 
   // Group budget items by month
@@ -255,7 +262,7 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
     ([month, lineItems]) => ({ month, lineItems })
   );
 
-  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions, petExpenses, familyOwed };
+  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions, petExpenses, sharedPetExpenses, familyOwed };
 }
 
 // --- Accounts ---

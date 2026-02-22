@@ -65,6 +65,7 @@ export const DEFAULT_STATE: FinanceState = {
   budgets: [],
   annualSubscriptions: [],
   petExpenses: [],
+  sharedPetExpenses: [],
   familyOwed: [],
 };
 
