@@ -32,6 +32,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={`rounded-md px-3 py-2 text-sm transition-colors ${
+                  item.divider ? "mt-2 pt-2 border-t border-zinc-800" : ""
+                } ${
                   isActive
                     ? "bg-zinc-800 text-white font-medium"
                     : "hover:bg-zinc-800/50 hover:text-zinc-200"

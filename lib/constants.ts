@@ -68,17 +68,17 @@ export const DEFAULT_STATE: FinanceState = {
   familyOwed: [],
 };
 
-export const NAV_ITEMS = [
+export const NAV_ITEMS: { href: string; label: string; divider?: boolean }[] = [
   { href: "/", label: "Dashboard" },
-  { href: "/accounts", label: "Accounts" },
-  { href: "/debts", label: "Debts" },
-  { href: "/family-debts", label: "Family" },
-  { href: "/pet", label: "Pet" },
-  { href: "/family-owed", label: "Owed" },
+  { href: "/accounts", label: "Accounts", divider: true },
   { href: "/crypto", label: "Crypto" },
-  { href: "/incoming", label: "Incoming" },
-  { href: "/budget", label: "Budget" },
-  { href: "/annual", label: "Annual" },
-  { href: "/tax", label: "Tax" },
+  { href: "/debts", label: "Debts", divider: true },
+  { href: "/family-debts", label: "Family Debts" },
+  { href: "/family-owed", label: "Family Owed" },
+  { href: "/incoming", label: "Incoming", divider: true },
+  { href: "/budget", label: "Monthly Budget" },
+  { href: "/annual", label: "Subscriptions" },
+  { href: "/pet", label: "Pet" },
+  { href: "/tax", label: "Tax", divider: true },
   { href: "/reports", label: "Reports" },
 ];

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { calculateTax } from "@/lib/tax";
 import { formatMoney, formatPercent } from "@/lib/format";
@@ -8,9 +9,25 @@ import type { Currency } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
 
 export default function TaxPage() {
+  const { state } = useFinance();
   const { displayCurrency, convert } = useCurrency();
+
+  // Pre-fill from the latest budget's income item
+  const budgetIncome = useMemo(() => {
+    const latest = [...state.budgets].sort((a, b) => b.month.localeCompare(a.month))[0];
+    return latest?.lineItems.find((li) => li.category === "income") ?? null;
+  }, [state.budgets]);
+
   const [income, setIncome] = useState(0);
   const [incomeCurrency, setIncomeCurrency] = useState<Currency>("CAD");
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Sync once when budget data arrives
+  if (budgetIncome && !prefilled && income === 0) {
+    setIncome(budgetIncome.amount);
+    setIncomeCurrency(budgetIncome.currency);
+    setPrefilled(true);
+  }
 
   const annualGrossCAD = useMemo(
     () => convert(income, incomeCurrency, "CAD") ,
@@ -53,6 +70,9 @@ export default function TaxPage() {
             ))}
           </select>
         </div>
+        {prefilled && (
+          <div className="text-xs text-zinc-400 mt-1.5">Pre-filled from your budget</div>
+        )}
       </div>
 
       {annualGrossCAD > 0 && (

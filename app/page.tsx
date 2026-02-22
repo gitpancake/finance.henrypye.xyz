@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import SummaryCard from "@/components/SummaryCard";
 import NetWorthBar from "@/components/NetWorthBar";
 import CurrencyBadge from "@/components/CurrencyBadge";
 import { formatMoney } from "@/lib/format";
+import { yearlyAmount } from "@/lib/subscriptions";
 import type { Currency } from "@/lib/types";
 
 export default function Dashboard() {
@@ -57,18 +59,9 @@ export default function Dashboard() {
     );
     const monthlyRent = rentItem ? convert(rentItem.amount, rentItem.currency) : 0;
 
-    const now = new Date();
-    const annualSubCosts = state.annualSubscriptions.reduce((sum, sub) => {
-      const converted = convert(sub.amount, sub.currency);
-      if (!sub.nextRenewal) return sum + converted; // no date = assume yearly
-      const renewal = new Date(sub.nextRenewal);
-      const msUntil = renewal.getTime() - now.getTime();
-      const monthsUntil = Math.max(1, msUntil / (1000 * 60 * 60 * 24 * 30.44));
-      // If renewal is within 12 months, it's a yearly sub — full cost
-      // If renewal is further out (e.g. 18mo), it's a multi-year sub — pro-rate
-      const annualPortion = monthsUntil <= 12 ? converted : converted * (12 / monthsUntil);
-      return sum + annualPortion;
-    }, 0);
+    const annualSubCosts = state.annualSubscriptions.reduce(
+      (sum, s) => sum + convert(yearlyAmount(s), s.currency), 0
+    );
 
     const annualCosts = monthlyExpenses * 12 + oneOffExpenses + annualSubCosts;
 
@@ -125,7 +118,7 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <div>
-              <div className="text-xs text-zinc-500">Recurring x 12</div>
+              <Link href="/budget" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">Recurring x 12</Link>
               <div className="font-mono text-sm font-semibold text-zinc-900">
                 {formatMoney(summary.monthlyExpenses * 12, displayCurrency)}
               </div>
@@ -133,7 +126,7 @@ export default function Dashboard() {
             </div>
             {summary.oneOffExpenses > 0 && (
               <div>
-                <div className="text-xs text-zinc-500">One-off Expenses</div>
+                <Link href="/budget" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">One-off Expenses</Link>
                 <div className="font-mono text-sm font-semibold text-zinc-900">
                   {formatMoney(summary.oneOffExpenses, displayCurrency)}
                 </div>
@@ -142,7 +135,7 @@ export default function Dashboard() {
             )}
             {summary.monthlyRent > 0 && (
               <div>
-                <div className="text-xs text-zinc-500">Rent</div>
+                <Link href="/budget" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">Rent</Link>
                 <div className="font-mono text-sm font-semibold text-zinc-900">
                   {formatMoney(summary.monthlyRent * 12, displayCurrency)}
                 </div>
@@ -150,7 +143,7 @@ export default function Dashboard() {
               </div>
             )}
             <div>
-              <div className="text-xs text-zinc-500">Annual Subscriptions</div>
+              <Link href="/annual" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">Annual Subscriptions</Link>
               <div className="font-mono text-sm font-semibold text-zinc-900">
                 {formatMoney(summary.annualSubCosts, displayCurrency)}
               </div>
