@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import EditableTable, { type Column } from "@/components/EditableTable";
+import EditableTable, { type Column, type UserOption } from "@/components/EditableTable";
 import SummaryCard from "@/components/SummaryCard";
 import { formatMoney, formatPercent } from "@/lib/format";
 import { calculateTax } from "@/lib/tax";
@@ -15,6 +15,7 @@ const expenseColumns: Column[] = [
   { key: "label", label: "Item", type: "text" },
   { key: "amount", label: "Amount", type: "number" },
   { key: "currency", label: "Currency", type: "select", options: ["CAD", "USD", "GBP", "EUR"] },
+  { key: "accountId", label: "Account", type: "user-select" },
   { key: "dayOfMonth", label: "Day", type: "number", width: "70px" },
   { key: "recurring", label: "Recurring", type: "checkbox", width: "80px" },
 ];
@@ -40,6 +41,8 @@ export default function BudgetPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
   const [month, setMonth] = useState(getCurrentMonth);
+
+  const accountOptions: UserOption[] = state.accounts.map((a) => ({ value: a.id, label: a.name }));
 
   const budget = state.budgets.find((b) => b.month === month);
 
@@ -91,6 +94,7 @@ export default function BudgetPage() {
             category: "income",
             dayOfMonth: null,
             recurring: true,
+            accountId: null,
           },
         },
       });
@@ -141,6 +145,7 @@ export default function BudgetPage() {
       category: "expense",
       dayOfMonth: day >= 1 && day <= 31 ? day : null,
       recurring: row.recurring !== false,
+      accountId: (row.accountId as string) || null,
     };
     dispatch({ type: "ADD_BUDGET_ITEM", payload: { month, item } });
   };
@@ -155,6 +160,7 @@ export default function BudgetPage() {
       category: "expense",
       dayOfMonth: day >= 1 && day <= 31 ? day : null,
       recurring: row.recurring !== false,
+      accountId: (row.accountId as string) || null,
     };
     dispatch({ type: "UPDATE_BUDGET_ITEM", payload: { month, item } });
   };
@@ -254,7 +260,8 @@ export default function BudgetPage() {
         onAdd={handleAddExpense}
         onUpdate={handleUpdateExpense}
         onDelete={handleDelete}
-        defaultValues={{ currency: "CAD", recurring: true }}
+        defaultValues={{ currency: "CAD", recurring: true, accountId: null }}
+        usersData={accountOptions}
       />
 
       {/* Summary */}

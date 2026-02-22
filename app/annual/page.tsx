@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import EditableTable, { type Column } from "@/components/EditableTable";
+import EditableTable, { type Column, type UserOption } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, AnnualSubscription } from "@/lib/types";
 import { yearlyAmount } from "@/lib/subscriptions";
@@ -12,6 +12,7 @@ const columns: Column[] = [
   { key: "label", label: "Subscription", type: "text" },
   { key: "amount", label: "Cost", type: "number" },
   { key: "currency", label: "Currency", type: "select", options: ["CAD", "USD", "GBP", "EUR"] },
+  { key: "accountId", label: "Account", type: "user-select" },
   { key: "nextRenewal", label: "Next Renewal", type: "date" },
   { key: "notes", label: "Notes", type: "text" },
 ];
@@ -19,6 +20,8 @@ const columns: Column[] = [
 export default function AnnualPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
+
+  const accountOptions: UserOption[] = state.accounts.map((a) => ({ value: a.id, label: a.name }));
 
   if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
 
@@ -40,6 +43,7 @@ export default function AnnualPage() {
       currency: (row.currency as Currency) || "CAD",
       nextRenewal: String(row.nextRenewal || ""),
       notes: String(row.notes || ""),
+      accountId: (row.accountId as string) || null,
     };
     dispatch({ type: "ADD_ANNUAL_SUB", payload: sub });
   };
@@ -54,6 +58,7 @@ export default function AnnualPage() {
       currency: (row.currency as Currency) || existing.currency,
       nextRenewal: String(row.nextRenewal || ""),
       notes: String(row.notes || ""),
+      accountId: (row.accountId as string) || null,
     };
     dispatch({ type: "UPDATE_ANNUAL_SUB", payload: updated });
   };
@@ -69,7 +74,8 @@ export default function AnnualPage() {
         onAdd={handleAdd}
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_ANNUAL_SUB", payload: id })}
-        defaultValues={{ currency: "USD" }}
+        defaultValues={{ currency: "USD", accountId: null }}
+        usersData={accountOptions}
       />
 
       {subs.length > 0 && (

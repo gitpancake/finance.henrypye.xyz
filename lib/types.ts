@@ -48,6 +48,7 @@ export interface BudgetLineItem {
   category: "income" | "expense";
   dayOfMonth: number | null;
   recurring: boolean;
+  accountId: string | null;
 }
 
 export interface MonthlyBudget {
@@ -73,6 +74,7 @@ export interface AnnualSubscription {
   currency: Currency;
   nextRenewal: string;
   notes: string;
+  accountId: string | null;
 }
 
 export interface PetExpense {

@@ -135,6 +135,7 @@ function toBudgetItem(row: Record<string, unknown>): BudgetLineItem & { month: s
     category: row.category as BudgetLineItem["category"],
     dayOfMonth: row.day_of_month != null ? Number(row.day_of_month) : null,
     recurring: row.recurring !== false,
+    accountId: (row.account_id as string) ?? null,
     month: row.month as string,
   };
 }
@@ -149,6 +150,7 @@ function fromBudgetItem(month: string, item: BudgetLineItem, userId: string) {
     category: item.category,
     day_of_month: item.dayOfMonth ?? null,
     recurring: item.recurring,
+    account_id: item.accountId ?? null,
     user_id: userId,
   };
 }
@@ -161,11 +163,12 @@ function toAnnualSub(row: Record<string, unknown>): AnnualSubscription {
     currency: row.currency as AnnualSubscription["currency"],
     nextRenewal: (row.next_renewal as string) ?? "",
     notes: (row.notes as string) ?? "",
+    accountId: (row.account_id as string) ?? null,
   };
 }
 
 function fromAnnualSub(s: AnnualSubscription, userId: string) {
-  return { id: s.id, label: s.label, amount: s.amount, currency: s.currency, next_renewal: s.nextRenewal || null, notes: s.notes, user_id: userId };
+  return { id: s.id, label: s.label, amount: s.amount, currency: s.currency, next_renewal: s.nextRenewal || null, notes: s.notes, account_id: s.accountId ?? null, user_id: userId };
 }
 
 function toPetExpense(row: Record<string, unknown>): PetExpense {
