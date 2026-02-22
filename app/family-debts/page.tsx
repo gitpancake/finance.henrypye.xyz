@@ -59,6 +59,7 @@ export default function FamilyDebtsPage() {
       linkedOwedId: null,
       paid: null,
       paidOff: null,
+      sortOrder: Math.max(0, ...manualDebts.map((d) => d.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_FAMILY_DEBT", payload: debt });
   };
@@ -92,6 +93,7 @@ export default function FamilyDebtsPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_FAMILY_DEBT", payload: id })}
         defaultValues={{ currency: "CAD" }}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "familyDebts", orderedIds: ids } })}
       />
 
       {linkedDebts.length > 0 && (

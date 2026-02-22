@@ -22,6 +22,7 @@ export default function CryptoPage() {
       id: crypto.randomUUID(),
       asset: (row.asset as CryptoAsset) || "ETH",
       amount: Math.abs(Number(row.amount) || 0),
+      sortOrder: Math.max(0, ...state.crypto.map((c) => c.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_CRYPTO", payload: holding });
   };
@@ -56,6 +57,7 @@ export default function CryptoPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_CRYPTO", payload: id })}
         defaultValues={{ asset: "ETH" }}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "crypto", orderedIds: ids } })}
       />
 
       {state.crypto.length > 0 && rates && (

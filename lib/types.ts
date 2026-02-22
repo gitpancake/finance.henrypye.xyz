@@ -12,6 +12,7 @@ export interface Account {
   balance: number;
   isOutgoingsAccount: boolean;
   notes: string;
+  sortOrder: number;
 }
 
 export interface Debt {
@@ -20,6 +21,7 @@ export interface Debt {
   currency: Currency;
   amount: number;
   notes: string;
+  sortOrder: number;
 }
 
 export interface FamilyDebt {
@@ -32,12 +34,14 @@ export interface FamilyDebt {
   linkedOwedId: string | null;
   paid: number | null;
   paidOff: boolean | null;
+  sortOrder: number;
 }
 
 export interface CryptoHolding {
   id: string;
   asset: CryptoAsset;
   amount: number;
+  sortOrder: number;
 }
 
 export interface BudgetLineItem {
@@ -49,6 +53,7 @@ export interface BudgetLineItem {
   dayOfMonth: number | null;
   recurring: boolean;
   accountId: string | null;
+  sortOrder: number;
 }
 
 export interface MonthlyBudget {
@@ -65,6 +70,7 @@ export interface Incoming {
   currency: Currency;
   status: IncomingStatus;
   notes: string;
+  sortOrder: number;
 }
 
 export interface AnnualSubscription {
@@ -75,6 +81,7 @@ export interface AnnualSubscription {
   nextRenewal: string;
   notes: string;
   accountId: string | null;
+  sortOrder: number;
 }
 
 export interface PetExpense {
@@ -85,6 +92,7 @@ export interface PetExpense {
   date: string;
   notes: string;
   sharedWithUserId: string | null;
+  sortOrder: number;
 }
 
 export interface FamilyOwed {
@@ -97,6 +105,7 @@ export interface FamilyOwed {
   paidOff: boolean;
   notes: string;
   linkedUserId: string | null;
+  sortOrder: number;
 }
 
 export interface ExchangeRates {

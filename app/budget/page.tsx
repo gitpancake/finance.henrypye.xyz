@@ -133,6 +133,7 @@ export default function BudgetPage() {
             dayOfMonth: null,
             recurring: true,
             accountId: null,
+            sortOrder: 0,
           },
         },
       });
@@ -184,11 +185,13 @@ export default function BudgetPage() {
       dayOfMonth: day >= 1 && day <= 31 ? day : null,
       recurring: row.recurring !== false,
       accountId: (row.accountId as string) || null,
+      sortOrder: Math.max(0, ...expenseItems.map((li) => li.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_BUDGET_ITEM", payload: { month, item } });
   };
 
   const handleUpdateExpense = (row: Record<string, unknown>) => {
+    const existing = expenseItems.find((li) => li.id === row.id);
     const day = Number(row.dayOfMonth) || 0;
     const item: BudgetLineItem = {
       id: row.id as string,
@@ -199,6 +202,7 @@ export default function BudgetPage() {
       dayOfMonth: day >= 1 && day <= 31 ? day : null,
       recurring: row.recurring !== false,
       accountId: (row.accountId as string) || null,
+      sortOrder: existing?.sortOrder ?? 0,
     };
     dispatch({ type: "UPDATE_BUDGET_ITEM", payload: { month, item } });
   };
@@ -300,6 +304,7 @@ export default function BudgetPage() {
         onDelete={handleDelete}
         defaultValues={{ currency: "CAD", recurring: true, accountId: null }}
         usersData={accountOptions}
+        onReorder={(ids) => dispatch({ type: "REORDER_BUDGET_ITEMS", payload: { month, orderedIds: ids } })}
       />
 
       {/* Summary */}

@@ -70,6 +70,7 @@ export default function FamilyOwedPage() {
       paidOff: Boolean(row.paidOff),
       notes: String(row.notes || ""),
       linkedUserId: (row.linkedUserId as string) || null,
+      sortOrder: Math.max(0, ...items.map((o) => o.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_FAMILY_OWED", payload: item });
   };
@@ -107,6 +108,7 @@ export default function FamilyOwedPage() {
         onDelete={(id) => dispatch({ type: "DELETE_FAMILY_OWED", payload: id })}
         defaultValues={{ currency: "USD", paid: 0, paidOff: false }}
         usersData={platformUsers}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "familyOwed", orderedIds: ids } })}
       />
 
       {items.length > 0 && (

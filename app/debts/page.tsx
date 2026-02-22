@@ -42,6 +42,7 @@ export default function DebtsPage() {
       currency: (row.currency as Currency) || "CAD",
       amount: Math.abs(Number(row.amount) || 0),
       notes: String(row.notes || ""),
+      sortOrder: Math.max(0, ...state.debts.map((d) => d.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_DEBT", payload: debt });
   };
@@ -71,6 +72,7 @@ export default function DebtsPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_DEBT", payload: id })}
         defaultValues={{ currency: "CAD" }}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "debts", orderedIds: ids } })}
       />
 
       {state.debts.length > 0 && (

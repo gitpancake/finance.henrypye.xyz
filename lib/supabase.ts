@@ -29,6 +29,7 @@ function toAccount(row: Record<string, unknown>): Account {
     balance: Number(row.balance),
     isOutgoingsAccount: row.is_outgoings_account as boolean,
     notes: (row.notes as string) ?? "",
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
@@ -41,6 +42,7 @@ function fromAccount(a: Account, userId: string) {
     balance: a.balance,
     is_outgoings_account: a.isOutgoingsAccount,
     notes: a.notes,
+    sort_order: a.sortOrder,
     user_id: userId,
   };
 }
@@ -52,11 +54,12 @@ function toDebt(row: Record<string, unknown>): Debt {
     currency: row.currency as Debt["currency"],
     amount: Number(row.amount),
     notes: (row.notes as string) ?? "",
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromDebt(d: Debt, userId: string) {
-  return { id: d.id, creditor: d.creditor, currency: d.currency, amount: d.amount, notes: d.notes, user_id: userId };
+  return { id: d.id, creditor: d.creditor, currency: d.currency, amount: d.amount, notes: d.notes, sort_order: d.sortOrder, user_id: userId };
 }
 
 function toFamilyDebt(row: Record<string, unknown>): FamilyDebt {
@@ -70,6 +73,7 @@ function toFamilyDebt(row: Record<string, unknown>): FamilyDebt {
     linkedOwedId: null,
     paid: null,
     paidOff: null,
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
@@ -84,11 +88,12 @@ function linkedOwedToFamilyDebt(row: Record<string, unknown>, creditorUsername: 
     linkedOwedId: row.id as string,
     paid: Number(row.paid ?? 0),
     paidOff: (row.paid_off as boolean) ?? false,
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromFamilyDebt(d: FamilyDebt, userId: string) {
-  return { id: d.id, family_member: d.familyMember, description: d.description, amount: d.amount, currency: d.currency, notes: d.notes, user_id: userId };
+  return { id: d.id, family_member: d.familyMember, description: d.description, amount: d.amount, currency: d.currency, notes: d.notes, sort_order: d.sortOrder, user_id: userId };
 }
 
 function toCrypto(row: Record<string, unknown>): CryptoHolding {
@@ -96,11 +101,12 @@ function toCrypto(row: Record<string, unknown>): CryptoHolding {
     id: row.id as string,
     asset: row.asset as CryptoHolding["asset"],
     amount: Number(row.amount),
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromCrypto(c: CryptoHolding, userId: string) {
-  return { id: c.id, asset: c.asset, amount: c.amount, user_id: userId };
+  return { id: c.id, asset: c.asset, amount: c.amount, sort_order: c.sortOrder, user_id: userId };
 }
 
 function toIncoming(row: Record<string, unknown>): Incoming {
@@ -111,6 +117,7 @@ function toIncoming(row: Record<string, unknown>): Incoming {
     currency: row.currency as Incoming["currency"],
     status: row.status as Incoming["status"],
     notes: (row.notes as string) ?? "",
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
@@ -122,6 +129,7 @@ function fromIncoming(i: Incoming, userId: string) {
     currency: i.currency,
     status: i.status,
     notes: i.notes,
+    sort_order: i.sortOrder,
     user_id: userId,
   };
 }
@@ -136,6 +144,7 @@ function toBudgetItem(row: Record<string, unknown>): BudgetLineItem & { month: s
     dayOfMonth: row.day_of_month != null ? Number(row.day_of_month) : null,
     recurring: row.recurring !== false,
     accountId: (row.account_id as string) ?? null,
+    sortOrder: Number(row.sort_order ?? 0),
     month: row.month as string,
   };
 }
@@ -151,6 +160,7 @@ function fromBudgetItem(month: string, item: BudgetLineItem, userId: string) {
     day_of_month: item.dayOfMonth ?? null,
     recurring: item.recurring,
     account_id: item.accountId ?? null,
+    sort_order: item.sortOrder,
     user_id: userId,
   };
 }
@@ -164,11 +174,12 @@ function toAnnualSub(row: Record<string, unknown>): AnnualSubscription {
     nextRenewal: (row.next_renewal as string) ?? "",
     notes: (row.notes as string) ?? "",
     accountId: (row.account_id as string) ?? null,
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromAnnualSub(s: AnnualSubscription, userId: string) {
-  return { id: s.id, label: s.label, amount: s.amount, currency: s.currency, next_renewal: s.nextRenewal || null, notes: s.notes, account_id: s.accountId ?? null, user_id: userId };
+  return { id: s.id, label: s.label, amount: s.amount, currency: s.currency, next_renewal: s.nextRenewal || null, notes: s.notes, account_id: s.accountId ?? null, sort_order: s.sortOrder, user_id: userId };
 }
 
 function toPetExpense(row: Record<string, unknown>): PetExpense {
@@ -180,11 +191,12 @@ function toPetExpense(row: Record<string, unknown>): PetExpense {
     date: (row.date as string) ?? "",
     notes: (row.notes as string) ?? "",
     sharedWithUserId: (row.shared_with_user_id as string) ?? null,
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromPetExpense(e: PetExpense, userId: string) {
-  return { id: e.id, description: e.description, amount: e.amount, currency: e.currency, date: e.date || null, notes: e.notes, user_id: userId, shared_with_user_id: e.sharedWithUserId ?? null };
+  return { id: e.id, description: e.description, amount: e.amount, currency: e.currency, date: e.date || null, notes: e.notes, sort_order: e.sortOrder, user_id: userId, shared_with_user_id: e.sharedWithUserId ?? null };
 }
 
 function toFamilyOwed(row: Record<string, unknown>): FamilyOwed {
@@ -198,26 +210,27 @@ function toFamilyOwed(row: Record<string, unknown>): FamilyOwed {
     paidOff: (row.paid_off as boolean) ?? false,
     notes: (row.notes as string) ?? "",
     linkedUserId: (row.linked_user_id as string) ?? null,
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromFamilyOwed(o: FamilyOwed, userId: string) {
-  return { id: o.id, person: o.person, description: o.description, amount: o.amount, paid: o.paid, currency: o.currency, paid_off: o.paidOff, notes: o.notes, user_id: userId, linked_user_id: o.linkedUserId ?? null };
+  return { id: o.id, person: o.person, description: o.description, amount: o.amount, paid: o.paid, currency: o.currency, paid_off: o.paidOff, notes: o.notes, sort_order: o.sortOrder, user_id: userId, linked_user_id: o.linkedUserId ?? null };
 }
 
 // --- Fetch all ---
 
 export async function fetchAllData(userId: string): Promise<FinanceState> {
   const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes, linkedDebtsRes, sharedPetRes, usersRes] = await Promise.all([
-    supabase.from("finance_accounts").select("*").eq("user_id", userId),
-    supabase.from("finance_debts").select("*").eq("user_id", userId),
-    supabase.from("finance_family_debts").select("*").eq("user_id", userId),
-    supabase.from("finance_crypto_holdings").select("*").eq("user_id", userId),
-    supabase.from("finance_incomings").select("*").eq("user_id", userId),
-    supabase.from("finance_budget_line_items").select("*").eq("user_id", userId),
-    supabase.from("finance_annual_subscriptions").select("*").eq("user_id", userId),
-    supabase.from("finance_pet_expenses").select("*").eq("user_id", userId),
-    supabase.from("finance_family_owed").select("*").eq("user_id", userId),
+    supabase.from("finance_accounts").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_debts").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_family_debts").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_crypto_holdings").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_incomings").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_budget_line_items").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_annual_subscriptions").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_pet_expenses").select("*").eq("user_id", userId).order("sort_order"),
+    supabase.from("finance_family_owed").select("*").eq("user_id", userId).order("sort_order"),
     // Cross-user: debts linked to this user from other users' family_owed
     supabase.from("finance_family_owed").select("*").eq("linked_user_id", userId),
     // Cross-user: pet expenses shared with this user
@@ -461,4 +474,16 @@ export async function updateFamilyOwed(o: FamilyOwed, userId: string) {
 export async function deleteFamilyOwed(id: string, userId: string) {
   const { error } = await supabase.from("finance_family_owed").delete().eq("id", id).eq("user_id", userId);
   if (error) console.error("deleteFamilyOwed:", error.message);
+}
+
+// --- Sort order ---
+
+export async function updateSortOrders(table: string, items: { id: string; sortOrder: number }[], userId: string) {
+  const updates = items.map((item) =>
+    supabase.from(table).update({ sort_order: item.sortOrder }).eq("id", item.id).eq("user_id", userId)
+  );
+  const results = await Promise.all(updates);
+  for (const { error } of results) {
+    if (error) console.error(`updateSortOrders(${table}):`, error.message);
+  }
 }

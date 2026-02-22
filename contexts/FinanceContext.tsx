@@ -53,7 +53,21 @@ import {
   insertFamilyOwed,
   updateFamilyOwed,
   deleteFamilyOwed,
+  updateSortOrders,
 } from "@/lib/supabase";
+
+type ReorderableKey = "accounts" | "debts" | "familyDebts" | "crypto" | "incomings" | "annualSubscriptions" | "petExpenses" | "familyOwed";
+
+const STATE_KEY_TO_TABLE: Record<ReorderableKey, string> = {
+  accounts: "finance_accounts",
+  debts: "finance_debts",
+  familyDebts: "finance_family_debts",
+  crypto: "finance_crypto_holdings",
+  incomings: "finance_incomings",
+  annualSubscriptions: "finance_annual_subscriptions",
+  petExpenses: "finance_pet_expenses",
+  familyOwed: "finance_family_owed",
+};
 
 type Action =
   | { type: "ADD_ACCOUNT"; payload: Account }
@@ -84,6 +98,8 @@ type Action =
   | { type: "ADD_FAMILY_OWED"; payload: FamilyOwed }
   | { type: "UPDATE_FAMILY_OWED"; payload: FamilyOwed }
   | { type: "DELETE_FAMILY_OWED"; payload: string }
+  | { type: "REORDER"; payload: { stateKey: ReorderableKey; orderedIds: string[] } }
+  | { type: "REORDER_BUDGET_ITEMS"; payload: { month: string; orderedIds: string[] } }
   | { type: "LOAD_STATE"; payload: FinanceState };
 
 function reducer(state: FinanceState, action: Action): FinanceState {
@@ -271,6 +287,36 @@ function reducer(state: FinanceState, action: Action): FinanceState {
         familyOwed: state.familyOwed.filter((o) => o.id !== action.payload),
       };
 
+    case "REORDER": {
+      const { stateKey, orderedIds } = action.payload;
+      const arr = [...(state[stateKey] as { id: string; sortOrder: number }[])];
+      const idToIndex = new Map(orderedIds.map((id, i) => [id, i]));
+      for (const item of arr) {
+        const newIndex = idToIndex.get(item.id);
+        if (newIndex !== undefined) item.sortOrder = newIndex;
+      }
+      arr.sort((a, b) => a.sortOrder - b.sortOrder);
+      return { ...state, [stateKey]: arr };
+    }
+
+    case "REORDER_BUDGET_ITEMS": {
+      const { month, orderedIds } = action.payload;
+      return {
+        ...state,
+        budgets: state.budgets.map((b) => {
+          if (b.month !== month) return b;
+          const items = [...b.lineItems];
+          const idToIndex = new Map(orderedIds.map((id, i) => [id, i]));
+          for (const item of items) {
+            const newIndex = idToIndex.get(item.id);
+            if (newIndex !== undefined) item.sortOrder = newIndex;
+          }
+          items.sort((a, b) => a.sortOrder - b.sortOrder);
+          return { ...b, lineItems: items };
+        }),
+      };
+    }
+
     default:
       return state;
   }
@@ -363,6 +409,17 @@ function persistAction(action: Action, userId: string) {
     case "DELETE_FAMILY_OWED":
       deleteFamilyOwed(action.payload, userId);
       break;
+    case "REORDER": {
+      const table = STATE_KEY_TO_TABLE[action.payload.stateKey];
+      const items = action.payload.orderedIds.map((id, i) => ({ id, sortOrder: i }));
+      updateSortOrders(table, items, userId);
+      break;
+    }
+    case "REORDER_BUDGET_ITEMS": {
+      const items = action.payload.orderedIds.map((id, i) => ({ id, sortOrder: i }));
+      updateSortOrders("finance_budget_line_items", items, userId);
+      break;
+    }
   }
 }
 

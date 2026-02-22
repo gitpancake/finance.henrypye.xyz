@@ -41,6 +41,7 @@ export default function IncomingPage() {
       currency: (row.currency as Currency) || "CAD",
       status: (row.status as IncomingStatus) || "pending",
       notes: String(row.notes || ""),
+      sortOrder: Math.max(0, ...state.incomings.map((i) => i.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_INCOMING", payload: incoming });
   };
@@ -71,6 +72,7 @@ export default function IncomingPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_INCOMING", payload: id })}
         defaultValues={{ currency: "USD", status: "pending" }}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "incomings", orderedIds: ids } })}
       />
 
       {state.incomings.length > 0 && (

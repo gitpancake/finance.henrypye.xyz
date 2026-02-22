@@ -34,11 +34,7 @@ export default function PetPage() {
 
   if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
 
-  const sorted = [...state.petExpenses].sort((a, b) => {
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return b.date.localeCompare(a.date);
-  });
+  const sorted = state.petExpenses;
 
   const totalInDisplay = state.petExpenses.reduce(
     (sum, e) => sum + convert(e.amount, e.currency),
@@ -60,6 +56,7 @@ export default function PetPage() {
       date: String(row.date || ""),
       notes: String(row.notes || ""),
       sharedWithUserId: (row.sharedWithUserId as string) || null,
+      sortOrder: Math.max(0, ...state.petExpenses.map((e) => e.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_PET_EXPENSE", payload: expense });
   };
@@ -95,6 +92,7 @@ export default function PetPage() {
         onDelete={(id) => dispatch({ type: "DELETE_PET_EXPENSE", payload: id })}
         defaultValues={{ currency: "CAD", sharedWithUserId: null }}
         usersData={platformUsers}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "petExpenses", orderedIds: ids } })}
       />
 
       {sharedExpenses.length > 0 && (

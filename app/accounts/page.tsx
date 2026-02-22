@@ -48,6 +48,7 @@ export default function AccountsPage() {
       balance: Number(row.balance) || 0,
       isOutgoingsAccount: !!row.isOutgoingsAccount,
       notes: String(row.notes || ""),
+      sortOrder: Math.max(0, ...banks.map((a) => a.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_ACCOUNT", payload: account });
   };
@@ -61,6 +62,7 @@ export default function AccountsPage() {
       balance: Number(row.balance) || 0,
       isOutgoingsAccount: false,
       notes: String(row.notes || ""),
+      sortOrder: Math.max(0, ...cards.map((a) => a.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_ACCOUNT", payload: account });
   };
@@ -91,6 +93,7 @@ export default function AccountsPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_ACCOUNT", payload: id })}
         defaultValues={{ currency: "CAD", isOutgoingsAccount: false }}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "accounts", orderedIds: ids } })}
       />
 
       {banks.length > 0 && (
@@ -107,6 +110,7 @@ export default function AccountsPage() {
         onUpdate={handleUpdate}
         onDelete={(id) => dispatch({ type: "DELETE_ACCOUNT", payload: id })}
         defaultValues={{ currency: "GBP" }}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "accounts", orderedIds: ids } })}
       />
 
       {cards.length > 0 && (

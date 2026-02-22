@@ -61,6 +61,7 @@ export default function AnnualPage() {
       nextRenewal: String(row.nextRenewal || ""),
       notes: String(row.notes || ""),
       accountId: (row.accountId as string) || null,
+      sortOrder: Math.max(0, ...subs.map((s) => s.sortOrder)) + 1,
     };
     dispatch({ type: "ADD_ANNUAL_SUB", payload: sub });
   };
@@ -93,6 +94,7 @@ export default function AnnualPage() {
         onDelete={(id) => dispatch({ type: "DELETE_ANNUAL_SUB", payload: id })}
         defaultValues={{ currency: "USD", accountId: null }}
         usersData={accountOptions}
+        onReorder={(ids) => dispatch({ type: "REORDER", payload: { stateKey: "annualSubscriptions", orderedIds: ids } })}
       />
 
       {subs.length > 0 && (
