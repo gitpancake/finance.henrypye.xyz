@@ -27,6 +27,23 @@ export default function AnnualPage() {
 
   const subs = state.annualSubscriptions;
 
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const dueThisMonth = useMemo(() => {
+    return subs.filter((s) => {
+      if (!s.nextRenewal) return false;
+      const d = new Date(s.nextRenewal);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+  }, [subs, currentMonth, currentYear]);
+
+  const dueThisMonthTotal = useMemo(
+    () => dueThisMonth.reduce((sum, s) => sum + convert(s.amount, s.currency), 0),
+    [dueThisMonth, convert]
+  );
+
   const totals = useMemo(() => {
     const perYear = subs.reduce(
       (sum, s) => sum + convert(yearlyAmount(s), s.currency),
@@ -83,7 +100,7 @@ export default function AnnualPage() {
           <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
             Summary
           </div>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-4 gap-6">
             <div>
               <div className="text-xs text-zinc-500">Per Year</div>
               <div className="font-mono text-lg font-semibold text-negative">
@@ -94,7 +111,7 @@ export default function AnnualPage() {
               </div>
             </div>
             <div>
-              <div className="text-xs text-zinc-500">Per Month</div>
+              <div className="text-xs text-zinc-500">Per Month (avg)</div>
               <div className="font-mono text-lg font-semibold text-negative">
                 {formatMoney(totals.perMonth, displayCurrency)}
               </div>
@@ -105,7 +122,39 @@ export default function AnnualPage() {
                 {formatMoney(totals.perDay, displayCurrency)}
               </div>
             </div>
+            <div>
+              <div className="text-xs text-zinc-500">Due This Month</div>
+              <div className="font-mono text-lg font-semibold text-negative">
+                {formatMoney(dueThisMonthTotal, displayCurrency)}
+              </div>
+              <div className="text-xs text-zinc-400 mt-0.5">
+                {dueThisMonth.length} renewal{dueThisMonth.length !== 1 && "s"}
+              </div>
+            </div>
           </div>
+
+          {dueThisMonth.length > 0 && (
+            <>
+              <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3 mt-4 border-t border-zinc-100 pt-3">
+                Renewals This Month
+              </div>
+              <div className="space-y-1.5">
+                {dueThisMonth.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-700">{s.label}</span>
+                      <span className="text-xs text-zinc-400">
+                        {new Date(s.nextRenewal).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
+                      </span>
+                    </div>
+                    <span className="font-mono text-negative">
+                      {formatMoney(s.amount, s.currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
