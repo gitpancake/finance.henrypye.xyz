@@ -102,16 +102,16 @@ export default function FamilyDebtsPage() {
               read-only
             </span>
           </div>
+          <div className="overflow-x-auto">
           <table className="sheet">
             <thead>
               <tr>
                 <th>Creditor</th>
                 <th>Description</th>
-                <th style={{ width: "90px" }}>Amount</th>
-                <th style={{ width: "90px" }}>Paid</th>
-                <th style={{ width: "90px" }}>Remaining</th>
-                <th style={{ width: "70px" }}>Currency</th>
-                <th style={{ width: "70px" }}>Status</th>
+                <th style={{ textAlign: "right" }}>Amount</th>
+                <th style={{ textAlign: "right" }}>Paid</th>
+                <th style={{ textAlign: "right" }}>Remaining</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -123,11 +123,6 @@ export default function FamilyDebtsPage() {
                   <td className="num">{formatMoney(d.paid ?? 0, d.currency)}</td>
                   <td className="num">{formatMoney(d.amount - (d.paid ?? 0), d.currency)}</td>
                   <td>
-                    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono">
-                      {d.currency}
-                    </span>
-                  </td>
-                  <td>
                     {d.paidOff ? (
                       <span className="text-xs text-green-600 font-medium">Paid off</span>
                     ) : (
@@ -138,6 +133,7 @@ export default function FamilyDebtsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
