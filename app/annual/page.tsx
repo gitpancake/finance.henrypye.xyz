@@ -27,17 +27,15 @@ export default function AnnualPage() {
 
   const subs = state.annualSubscriptions;
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const currentMonth = new Date().getMonth();
 
   const dueThisMonth = useMemo(() => {
     return subs.filter((s) => {
       if (!s.nextRenewal) return false;
       const d = new Date(s.nextRenewal);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      return d.getMonth() === currentMonth;
     });
-  }, [subs, currentMonth, currentYear]);
+  }, [subs, currentMonth]);
 
   const dueThisMonthTotal = useMemo(
     () => dueThisMonth.reduce((sum, s) => sum + convert(s.amount, s.currency), 0),
