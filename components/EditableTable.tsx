@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { Currency } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
 
@@ -48,23 +48,48 @@ function InlineRow({
   isNew?: boolean;
   usersData?: UserOption[];
 }) {
-  const [editing, setEditing] = useState(isNew ?? false);
   const [values, setValues] = useState<Record<string, unknown>>(data);
+  const [saved, setSaved] = useState(false);
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
 
+  // Sync values from parent when data changes (optimistic updates)
   useEffect(() => {
-    if (editing && firstInputRef.current) {
+    if (!isNew) setValues(data);
+  }, [data, isNew]);
+
+  // Focus first input on new row
+  useEffect(() => {
+    if (isNew && firstInputRef.current) {
       firstInputRef.current.focus();
     }
-  }, [editing]);
+  }, [isNew]);
 
-  const handleSave = () => {
+  // Cleanup timers
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
+  const triggerSave = useCallback(
+    (newValues: Record<string, unknown>) => {
+      onSave(newValues);
+      setSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 1500);
+    },
+    [onSave]
+  );
+
+  // --- New row handlers (explicit save) ---
+  const handleExplicitSave = () => {
     onSave(values);
-    if (isNew) {
-      setValues(data);
-    } else {
-      setEditing(false);
-    }
+    if (isNew) setValues(data);
   };
 
   const handleCancel = () => {
@@ -72,79 +97,142 @@ function InlineRow({
       onCancel();
     } else {
       setValues(data);
-      setEditing(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSave();
+  const handleNewRowKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleExplicitSave();
     if (e.key === "Escape") handleCancel();
   };
 
-  if (!editing && !isNew) {
+  // --- Existing row: immediate save for selects/checkboxes ---
+  const handleImmediateChange = (key: string, value: unknown) => {
+    const newValues = { ...valuesRef.current, [key]: value };
+    setValues(newValues);
+    triggerSave(newValues);
+  };
+
+  // --- Existing row: debounced save for text/number ---
+  const handleDebouncedChange = (key: string, value: unknown) => {
+    const newValues = { ...valuesRef.current, [key]: value };
+    setValues(newValues);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      triggerSave(valuesRef.current);
+    }, 500);
+  };
+
+  const handleBlur = () => {
+    if (isNew) return;
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+      triggerSave(valuesRef.current);
+    }
+  };
+
+  // ========== NEW ROW ==========
+  if (isNew) {
     return (
-      <tr className="group">
-        {columns.map((col) => (
-          <td
-            key={col.key}
-            className={col.type === "number" ? "num" : ""}
-          >
+      <tr className="border-t border-dashed border-zinc-300">
+        {columns.map((col, i) => (
+          <td key={col.key} className={col.type === "number" ? "num" : ""}>
             {col.type === "checkbox" ? (
               <input
                 type="checkbox"
                 checked={!!values[col.key]}
-                disabled
+                onChange={(e) =>
+                  setValues({ ...values, [col.key]: e.target.checked })
+                }
                 className="accent-zinc-900"
               />
             ) : col.type === "select" ? (
-              <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono">
-                {String(values[col.key] ?? "")}
-              </span>
+              <select
+                value={String(values[col.key] ?? "")}
+                onChange={(e) =>
+                  setValues({ ...values, [col.key]: e.target.value })
+                }
+                onKeyDown={handleNewRowKeyDown}
+              >
+                {(col.options ?? CURRENCIES).map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
             ) : col.type === "user-select" ? (
-              <span className="text-xs text-zinc-500">
-                {usersData?.find((u) => u.value === values[col.key])?.label ?? "—"}
-              </span>
-            ) : col.type === "date" ? (
-              values[col.key]
-                ? new Date(String(values[col.key])).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
-                : ""
+              <select
+                value={String(values[col.key] ?? "")}
+                onChange={(e) =>
+                  setValues({ ...values, [col.key]: e.target.value || null })
+                }
+                onKeyDown={handleNewRowKeyDown}
+              >
+                <option value="">— none —</option>
+                {(usersData ?? []).map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
             ) : (
-              String(values[col.key] ?? "")
+              <input
+                ref={i === 0 ? firstInputRef : undefined}
+                type={col.type === "date" ? "date" : col.type}
+                value={
+                  col.type === "number"
+                    ? (values[col.key] as number) ?? ""
+                    : String(values[col.key] ?? "")
+                }
+                onChange={(e) =>
+                  setValues({
+                    ...values,
+                    [col.key]:
+                      col.type === "number"
+                        ? e.target.value === ""
+                          ? ""
+                          : parseFloat(e.target.value)
+                        : e.target.value,
+                  })
+                }
+                onKeyDown={handleNewRowKeyDown}
+                placeholder={col.label}
+                step={col.type === "number" ? "0.01" : undefined}
+              />
             )}
           </td>
         ))}
         <td className="w-20">
-          <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1">
             <button
-              onClick={() => setEditing(true)}
+              onClick={handleExplicitSave}
+              className="text-xs font-medium text-zinc-900 hover:text-green-600"
+            >
+              Save
+            </button>
+            <button
+              onClick={handleCancel}
               className="text-xs text-zinc-400 hover:text-zinc-900"
             >
-              Edit
+              Cancel
             </button>
-            {onDelete && (
-              <button
-                onClick={onDelete}
-                className="text-xs text-zinc-400 hover:text-red-600"
-              >
-                Del
-              </button>
-            )}
           </div>
         </td>
       </tr>
     );
   }
 
+  // ========== EXISTING ROW (always editable, auto-save) ==========
   return (
-    <tr className={isNew ? "border-t border-dashed border-zinc-300" : ""}>
-      {columns.map((col, i) => (
+    <tr className="group">
+      {columns.map((col) => (
         <td key={col.key} className={col.type === "number" ? "num" : ""}>
           {col.type === "checkbox" ? (
             <input
               type="checkbox"
               checked={!!values[col.key]}
               onChange={(e) =>
-                setValues({ ...values, [col.key]: e.target.checked })
+                handleImmediateChange(col.key, e.target.checked)
               }
               className="accent-zinc-900"
             />
@@ -152,9 +240,8 @@ function InlineRow({
             <select
               value={String(values[col.key] ?? "")}
               onChange={(e) =>
-                setValues({ ...values, [col.key]: e.target.value })
+                handleImmediateChange(col.key, e.target.value)
               }
-              onKeyDown={handleKeyDown}
             >
               {(col.options ?? CURRENCIES).map((opt) => (
                 <option key={opt} value={opt}>
@@ -166,9 +253,8 @@ function InlineRow({
             <select
               value={String(values[col.key] ?? "")}
               onChange={(e) =>
-                setValues({ ...values, [col.key]: e.target.value || null })
+                handleImmediateChange(col.key, e.target.value || null)
               }
-              onKeyDown={handleKeyDown}
             >
               <option value="">— none —</option>
               {(usersData ?? []).map((u) => (
@@ -177,25 +263,33 @@ function InlineRow({
                 </option>
               ))}
             </select>
+          ) : col.type === "date" ? (
+            <input
+              type="date"
+              value={String(values[col.key] ?? "")}
+              onChange={(e) =>
+                handleImmediateChange(col.key, e.target.value)
+              }
+            />
           ) : (
             <input
-              ref={i === 0 ? firstInputRef : undefined}
-              type={col.type === "date" ? "date" : col.type}
+              type={col.type}
               value={
                 col.type === "number"
                   ? (values[col.key] as number) ?? ""
                   : String(values[col.key] ?? "")
               }
               onChange={(e) =>
-                setValues({
-                  ...values,
-                  [col.key]:
-                    col.type === "number"
-                      ? e.target.value === "" ? "" : parseFloat(e.target.value)
-                      : e.target.value,
-                })
+                handleDebouncedChange(
+                  col.key,
+                  col.type === "number"
+                    ? e.target.value === ""
+                      ? ""
+                      : parseFloat(e.target.value)
+                    : e.target.value
+                )
               }
-              onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
               placeholder={col.label}
               step={col.type === "number" ? "0.01" : undefined}
             />
@@ -203,23 +297,18 @@ function InlineRow({
         </td>
       ))}
       <td className="w-20">
-        <div className="flex gap-1">
-          <button
-            onClick={handleSave}
-            className="text-xs font-medium text-zinc-900 hover:text-green-600"
+        <div className="flex gap-1 items-center">
+          <span
+            className={`text-xs text-green-500 transition-opacity duration-300 ${
+              saved ? "opacity-100" : "opacity-0"
+            }`}
           >
-            Save
-          </button>
-          <button
-            onClick={handleCancel}
-            className="text-xs text-zinc-400 hover:text-zinc-900"
-          >
-            Cancel
-          </button>
-          {!isNew && onDelete && (
+            Saved
+          </span>
+          {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-zinc-400 hover:text-red-600"
+              className="text-xs text-zinc-400 hover:text-red-600 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
             >
               Del
             </button>
