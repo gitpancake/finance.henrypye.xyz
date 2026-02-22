@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -9,14 +9,20 @@ import NetWorthBar from "@/components/NetWorthBar";
 import CurrencyBadge from "@/components/CurrencyBadge";
 import { formatMoney } from "@/lib/format";
 import { yearlyAmount } from "@/lib/subscriptions";
-import type { Currency } from "@/lib/types";
+import { loadNFTPortfolio } from "@/lib/storage";
+import type { Currency, NFTPortfolio } from "@/lib/types";
 
 export default function Dashboard() {
   const { state, isLoaded } = useFinance();
   const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
 
+  const [nftCache, setNftCache] = useState<NFTPortfolio | null>(null);
+  useEffect(() => {
+    setNftCache(loadNFTPortfolio());
+  }, []);
+
   const summary = useMemo(() => {
-    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0 };
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0, nftFloorValue: 0 };
 
     const bankAssets = state.accounts
       .filter((a) => a.type === "bank")
@@ -27,7 +33,10 @@ export default function Dashboard() {
       return sum + convertCrypto(c.amount, priceUSD);
     }, 0);
 
-    const assets = bankAssets + cryptoAssets;
+    const nftFloorETH = (nftCache?.nfts ?? []).reduce((sum, n) => sum + (n.floorPrice ?? 0), 0);
+    const nftFloorValue = nftFloorETH > 0 ? convertCrypto(nftFloorETH, rates.ETH_USD) : 0;
+
+    const assets = bankAssets + cryptoAssets + nftFloorValue;
 
     const creditCardDebt = state.accounts
       .filter((a) => a.type === "credit_card")
@@ -76,8 +85,9 @@ export default function Dashboard() {
       oneOffExpenses,
       annualSubCosts,
       monthlyRent,
+      nftFloorValue,
     };
-  }, [state, rates, convert, convertCrypto]);
+  }, [state, rates, convert, convertCrypto, nftCache]);
 
   if (!isLoaded) {
     return <div className="text-sm text-zinc-400">Loading...</div>;

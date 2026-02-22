@@ -21,6 +21,7 @@ import type {
   AnnualSubscription,
   PetExpense,
   FamilyOwed,
+  WalletAddress,
 } from "@/lib/types";
 import { DEFAULT_STATE } from "@/lib/constants";
 import {
@@ -37,6 +38,7 @@ import {
   insertCrypto,
   updateCrypto,
   deleteCrypto,
+  replaceCrypto,
   insertIncoming,
   updateIncoming,
   deleteIncoming,
@@ -53,6 +55,9 @@ import {
   insertFamilyOwed,
   updateFamilyOwed,
   deleteFamilyOwed,
+  insertWalletAddress,
+  updateWalletAddress,
+  deleteWalletAddress,
   updateSortOrders,
 } from "@/lib/supabase";
 
@@ -82,6 +87,7 @@ type Action =
   | { type: "ADD_CRYPTO"; payload: CryptoHolding }
   | { type: "UPDATE_CRYPTO"; payload: CryptoHolding }
   | { type: "DELETE_CRYPTO"; payload: string }
+  | { type: "SET_CRYPTO"; payload: CryptoHolding[] }
   | { type: "ADD_INCOMING"; payload: Incoming }
   | { type: "UPDATE_INCOMING"; payload: Incoming }
   | { type: "DELETE_INCOMING"; payload: string }
@@ -98,6 +104,9 @@ type Action =
   | { type: "ADD_FAMILY_OWED"; payload: FamilyOwed }
   | { type: "UPDATE_FAMILY_OWED"; payload: FamilyOwed }
   | { type: "DELETE_FAMILY_OWED"; payload: string }
+  | { type: "ADD_WALLET"; payload: WalletAddress }
+  | { type: "UPDATE_WALLET"; payload: WalletAddress }
+  | { type: "DELETE_WALLET"; payload: string }
   | { type: "REORDER"; payload: { stateKey: ReorderableKey; orderedIds: string[] } }
   | { type: "REORDER_BUDGET_ITEMS"; payload: { month: string; orderedIds: string[] } }
   | { type: "LOAD_STATE"; payload: FinanceState };
@@ -166,6 +175,8 @@ function reducer(state: FinanceState, action: Action): FinanceState {
         ...state,
         crypto: state.crypto.filter((c) => c.id !== action.payload),
       };
+    case "SET_CRYPTO":
+      return { ...state, crypto: action.payload };
 
     case "ADD_INCOMING":
       return { ...state, incomings: [...state.incomings, action.payload] };
@@ -287,6 +298,21 @@ function reducer(state: FinanceState, action: Action): FinanceState {
         familyOwed: state.familyOwed.filter((o) => o.id !== action.payload),
       };
 
+    case "ADD_WALLET":
+      return { ...state, walletAddresses: [...state.walletAddresses, action.payload] };
+    case "UPDATE_WALLET":
+      return {
+        ...state,
+        walletAddresses: state.walletAddresses.map((w) =>
+          w.id === action.payload.id ? action.payload : w
+        ),
+      };
+    case "DELETE_WALLET":
+      return {
+        ...state,
+        walletAddresses: state.walletAddresses.filter((w) => w.id !== action.payload),
+      };
+
     case "REORDER": {
       const { stateKey, orderedIds } = action.payload;
       const arr = [...(state[stateKey] as { id: string; sortOrder: number }[])];
@@ -361,6 +387,9 @@ function persistAction(action: Action, userId: string) {
     case "DELETE_CRYPTO":
       deleteCrypto(action.payload, userId);
       break;
+    case "SET_CRYPTO":
+      replaceCrypto(action.payload, userId);
+      break;
     case "ADD_INCOMING":
       insertIncoming(action.payload, userId);
       break;
@@ -408,6 +437,15 @@ function persistAction(action: Action, userId: string) {
       break;
     case "DELETE_FAMILY_OWED":
       deleteFamilyOwed(action.payload, userId);
+      break;
+    case "ADD_WALLET":
+      insertWalletAddress(action.payload, userId);
+      break;
+    case "UPDATE_WALLET":
+      updateWalletAddress(action.payload, userId);
+      break;
+    case "DELETE_WALLET":
+      deleteWalletAddress(action.payload, userId);
       break;
     case "REORDER": {
       const table = STATE_KEY_TO_TABLE[action.payload.stateKey];

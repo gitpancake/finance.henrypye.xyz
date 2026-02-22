@@ -67,6 +67,7 @@ export const DEFAULT_STATE: FinanceState = {
   petExpenses: [],
   sharedPetExpenses: [],
   familyOwed: [],
+  walletAddresses: [],
 };
 
 export const NAV_ITEMS: { href: string; label: string; divider?: boolean }[] = [
@@ -80,6 +81,7 @@ export const NAV_ITEMS: { href: string; label: string; divider?: boolean }[] = [
   { href: "/budget", label: "Monthly Budget" },
   { href: "/annual", label: "Subscriptions" },
   { href: "/pet", label: "Pet" },
-  { href: "/tax", label: "Tax", divider: true },
+  { href: "/settings", label: "Settings", divider: true },
+  { href: "/tax", label: "Tax" },
   { href: "/reports", label: "Reports" },
 ];

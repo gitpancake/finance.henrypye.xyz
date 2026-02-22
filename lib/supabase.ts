@@ -9,6 +9,7 @@ import type {
   Incoming,
   BudgetLineItem,
   AnnualSubscription,
+  WalletAddress,
   FinanceState,
   MonthlyBudget,
 } from "./types";
@@ -218,10 +219,23 @@ function fromFamilyOwed(o: FamilyOwed, userId: string) {
   return { id: o.id, person: o.person, description: o.description, amount: o.amount, paid: o.paid, currency: o.currency, paid_off: o.paidOff, notes: o.notes, sort_order: o.sortOrder, user_id: userId, linked_user_id: o.linkedUserId ?? null };
 }
 
+function toWalletAddress(row: Record<string, unknown>): WalletAddress {
+  return {
+    id: row.id as string,
+    address: row.address as string,
+    label: (row.label as string) ?? "",
+    chain: (row.chain as string) ?? "ethereum",
+  };
+}
+
+function fromWalletAddress(w: WalletAddress, userId: string) {
+  return { id: w.id, address: w.address, label: w.label, chain: w.chain, user_id: userId };
+}
+
 // --- Fetch all ---
 
 export async function fetchAllData(userId: string): Promise<FinanceState> {
-  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes, linkedDebtsRes, sharedPetRes, usersRes] = await Promise.all([
+  const [accountsRes, debtsRes, familyDebtsRes, cryptoRes, incomingsRes, budgetRes, annualSubsRes, petRes, familyOwedRes, linkedDebtsRes, sharedPetRes, usersRes, walletRes] = await Promise.all([
     supabase.from("finance_accounts").select("*").eq("user_id", userId).order("sort_order"),
     supabase.from("finance_debts").select("*").eq("user_id", userId).order("sort_order"),
     supabase.from("finance_family_debts").select("*").eq("user_id", userId).order("sort_order"),
@@ -237,6 +251,7 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
     supabase.from("finance_pet_expenses").select("*").eq("shared_with_user_id", userId),
     // Fetch usernames for creditor display
     supabase.from("finance_users").select("id, username"),
+    supabase.from("finance_wallet_addresses").select("*").eq("user_id", userId),
   ]);
 
   // Build username lookup for linked debts
@@ -262,6 +277,7 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
     ownerName: usernameMap.get(row.user_id as string) ?? "Unknown",
   }));
   const familyOwed = (familyOwedRes.data ?? []).map(toFamilyOwed);
+  const walletAddresses = (walletRes.data ?? []).map(toWalletAddress);
 
   // Group budget items by month
   const budgetItems = (budgetRes.data ?? []).map(toBudgetItem);
@@ -275,7 +291,7 @@ export async function fetchAllData(userId: string): Promise<FinanceState> {
     ([month, lineItems]) => ({ month, lineItems })
   );
 
-  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions, petExpenses, sharedPetExpenses, familyOwed };
+  return { accounts, debts, familyDebts, crypto, incomings, budgets, annualSubscriptions, petExpenses, sharedPetExpenses, familyOwed, walletAddresses };
 }
 
 // --- Accounts ---
@@ -352,6 +368,23 @@ export async function updateCrypto(c: CryptoHolding, userId: string) {
 export async function deleteCrypto(id: string, userId: string) {
   const { error } = await supabase.from("finance_crypto_holdings").delete().eq("id", id).eq("user_id", userId);
   if (error) console.error("deleteCrypto:", error.message);
+}
+
+export async function replaceCrypto(holdings: CryptoHolding[], userId: string) {
+  const { error: delError } = await supabase
+    .from("finance_crypto_holdings")
+    .delete()
+    .eq("user_id", userId);
+  if (delError) {
+    console.error("replaceCrypto delete:", delError.message);
+    return;
+  }
+  if (holdings.length === 0) return;
+  const rows = holdings.map((c) => fromCrypto(c, userId));
+  const { error: insError } = await supabase
+    .from("finance_crypto_holdings")
+    .insert(rows);
+  if (insError) console.error("replaceCrypto insert:", insError.message);
 }
 
 // --- Incomings ---
@@ -474,6 +507,23 @@ export async function updateFamilyOwed(o: FamilyOwed, userId: string) {
 export async function deleteFamilyOwed(id: string, userId: string) {
   const { error } = await supabase.from("finance_family_owed").delete().eq("id", id).eq("user_id", userId);
   if (error) console.error("deleteFamilyOwed:", error.message);
+}
+
+// --- Wallet Addresses ---
+
+export async function insertWalletAddress(w: WalletAddress, userId: string) {
+  const { error } = await supabase.from("finance_wallet_addresses").insert(fromWalletAddress(w, userId));
+  if (error) console.error("insertWalletAddress:", error.message);
+}
+
+export async function updateWalletAddress(w: WalletAddress, userId: string) {
+  const { error } = await supabase.from("finance_wallet_addresses").update(fromWalletAddress(w, userId)).eq("id", w.id).eq("user_id", userId);
+  if (error) console.error("updateWalletAddress:", error.message);
+}
+
+export async function deleteWalletAddress(id: string, userId: string) {
+  const { error } = await supabase.from("finance_wallet_addresses").delete().eq("id", id).eq("user_id", userId);
+  if (error) console.error("deleteWalletAddress:", error.message);
 }
 
 // --- Sort order ---

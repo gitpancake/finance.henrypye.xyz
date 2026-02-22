@@ -108,6 +108,52 @@ export interface FamilyOwed {
   sortOrder: number;
 }
 
+export interface WalletAddress {
+  id: string;
+  address: string;
+  label: string;
+  chain: string;
+}
+
+export interface CollectionOffer {
+  price: number;
+  paymentToken: string;
+  remainingQuantity: number;
+}
+
+export interface OfferInfo {
+  price: number;
+  paymentToken: string;
+  isItemOffer?: boolean;
+}
+
+export interface NFTItem {
+  identifier: string;
+  collection: string;
+  collectionName: string;
+  name: string;
+  imageUrl: string;
+  chain: string;
+  contractAddress: string;
+  floorPrice: number | null;
+  bestOffer?: OfferInfo | null;
+}
+
+export interface CollectionInfo {
+  slug: string;
+  name: string;
+  floorPrice: number | null;
+  offers: CollectionOffer[];
+  bestOfferPrice: number | null;
+}
+
+export interface NFTPortfolio {
+  nfts: NFTItem[];
+  /** Collection slug -> info (name + floor price). Populated progressively. */
+  collections: Record<string, CollectionInfo>;
+  lastUpdated: string;
+}
+
 export interface ExchangeRates {
   CAD: 1;
   USD: number;
@@ -133,6 +179,7 @@ export interface FinanceState {
   petExpenses: PetExpense[];
   sharedPetExpenses: SharedPetExpense[];
   familyOwed: FamilyOwed[];
+  walletAddresses: WalletAddress[];
 }
 
 export interface TaxBreakdown {
