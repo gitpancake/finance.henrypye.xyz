@@ -41,6 +41,13 @@ export default function FamilyDebtsPage() {
     0
   );
 
+  const linkedTotal = linkedDebts.reduce(
+    (sum, d) => sum + convert(d.amount, d.currency), 0
+  );
+  const linkedOutstanding = linkedDebts
+    .filter((d) => !d.paidOff)
+    .reduce((sum, d) => sum + convert(d.amount - (d.paid ?? 0), d.currency), 0);
+
   const handleAdd = (row: Record<string, unknown>) => {
     const debt: FamilyDebt = {
       id: crypto.randomUUID(),
@@ -155,6 +162,43 @@ export default function FamilyDebtsPage() {
               </div>
             </div>
           </div>
+
+          {linkedDebts.length > 0 && (
+            <>
+              <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3 mt-4 border-t border-zinc-100 pt-3">
+                Linked Debts
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-xs text-zinc-500">Total Owed</div>
+                  <div className="font-mono text-sm font-semibold text-zinc-900">
+                    {formatMoney(linkedTotal, displayCurrency)}
+                  </div>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    {linkedDebts.length} linked debt{linkedDebts.length !== 1 && "s"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Outstanding</div>
+                  <div className="font-mono text-sm font-semibold text-negative">
+                    {formatMoney(linkedOutstanding, displayCurrency)}
+                  </div>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    {linkedDebts.filter((d) => !d.paidOff).length} not paid off
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Paid Off</div>
+                  <div className="font-mono text-sm font-semibold text-emerald-600">
+                    {formatMoney(linkedTotal - linkedOutstanding, displayCurrency)}
+                  </div>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    {linkedDebts.filter((d) => d.paidOff).length} settled
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
