@@ -34,7 +34,7 @@ export default function Dashboard() {
   }, []);
 
   const summary = useMemo(() => {
-    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0, nftOfferValue: 0 };
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0, nftOfferValue: 0, nftOfferETH: 0 };
 
     const bankAssets = state.accounts
       .filter((a) => a.type === "bank")
@@ -118,34 +118,9 @@ export default function Dashboard() {
       annualSubCosts,
       monthlyRent,
       nftOfferValue,
+      nftOfferETH,
     };
   }, [state, rates, convert, convertCrypto, nftCache]);
-
-  // Per-collection NFT offer breakdown for the table
-  const nftCollectionBreakdown = useMemo(() => {
-    if (!rates || !nftCache) return [];
-    const nfts = nftCache.nfts ?? [];
-    const collections = nftCache.collections ?? {};
-    const byCollection = new Map<string, typeof nfts>();
-    for (const nft of nfts) {
-      const key = nft.collection || "unknown";
-      if (!byCollection.has(key)) byCollection.set(key, []);
-      byCollection.get(key)!.push(nft);
-    }
-    return Array.from(byCollection.entries()).map(([slug, items]) => {
-      const itemBidTotal = items.reduce(
-        (s, nft) => s + (nft.bestOffer?.isItemOffer ? nft.bestOffer.price : 0), 0
-      );
-      const itemsWithBids = items.filter((nft) => nft.bestOffer?.isItemOffer).length;
-      const remainingCount = items.length - itemsWithBids;
-      const collOffers = collections[slug]?.offers ?? [];
-      const collOfferTotal = remainingCount > 0 ? calculateTopNOfferValue(collOffers, remainingCount) : 0;
-      const offerETH = itemBidTotal + collOfferTotal;
-      const name = items[0]?.collectionName || slug;
-      return { slug, name, count: items.length, offerETH };
-    }).filter((c) => c.offerETH > 0)
-      .sort((a, b) => b.offerETH - a.offerETH);
-  }, [rates, nftCache]);
 
   if (!isLoaded) {
     return <div className="text-sm text-zinc-400">Loading...</div>;
@@ -153,13 +128,13 @@ export default function Dashboard() {
 
   const netDebt = Math.max(0, summary.debts - summary.pendingIncoming);
   const netWorth = summary.assets - netDebt;
-  const nfts = nftCache?.nfts ?? [];
+  const nftCount = nftCache?.nfts?.length ?? 0;
   const hasData =
     state.accounts.length > 0 ||
     state.debts.length > 0 ||
     state.crypto.length > 0 ||
     state.incomings.length > 0 ||
-    nfts.length > 0;
+    nftCount > 0;
 
   return (
     <div>
@@ -337,32 +312,28 @@ export default function Dashboard() {
                     </tr>
                   );
                 })}
-              {rates &&
-                nftCollectionBreakdown.map((c) => (
-                  <tr key={`nft-${c.slug}`}>
-                    <td>
-                      {c.name}
-                      <span className="text-xs text-zinc-400 ml-1">×{c.count}</span>
-                    </td>
-                    <td>
-                      <span className="text-xs text-amber-600">NFT</span>
-                    </td>
-                    <td>
-                      <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-600">
-                        ETH
-                      </span>
-                    </td>
-                    <td className="num">
-                      {formatCrypto(c.offerETH)} ETH
-                    </td>
-                    <td className="num">
-                      {formatMoney(
-                        convertCrypto(c.offerETH, rates.ETH_USD),
-                        displayCurrency
-                      )}
-                    </td>
-                  </tr>
-                ))}
+              {rates && summary.nftOfferETH > 0 && (
+                <tr key="nfts">
+                  <td>
+                    NFTs
+                    <span className="text-xs text-zinc-400 ml-1">({nftCount})</span>
+                  </td>
+                  <td>
+                    <span className="text-xs text-amber-600">NFT Offers</span>
+                  </td>
+                  <td>
+                    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-600">
+                      ETH
+                    </span>
+                  </td>
+                  <td className="num">
+                    {formatCrypto(summary.nftOfferETH)} ETH
+                  </td>
+                  <td className="num">
+                    {formatMoney(summary.nftOfferValue, displayCurrency)}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           </div>
