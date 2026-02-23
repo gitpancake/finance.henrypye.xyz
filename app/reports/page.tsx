@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
+import { loadNFTPortfolio } from "@/lib/storage";
+import type { NFTPortfolio } from "@/lib/types";
 
 export default function ReportsPage() {
   const { state, isLoaded } = useFinance();
@@ -10,6 +12,11 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const [nftCache, setNftCache] = useState<NFTPortfolio | null>(null);
+  useEffect(() => {
+    setNftCache(loadNFTPortfolio());
+  }, []);
 
   const generate = async () => {
     setReport("");
@@ -23,7 +30,7 @@ export default function ReportsPage() {
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: state, context }),
+        body: JSON.stringify({ data: state, nftPortfolio: nftCache, context }),
         signal: controller.signal,
       });
 
