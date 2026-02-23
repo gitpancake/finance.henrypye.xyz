@@ -23,6 +23,7 @@ async function fetchNFTOffer(
     `/offers/collection/${slug}/nfts/${identifier}/best`
   )) as {
     price?: { value?: string; currency?: string; decimals?: number };
+    remaining_quantity?: number;
   } | null;
 
   let offer: OfferInfo | null = null;
@@ -30,10 +31,10 @@ async function fetchNFTOffer(
     const token = data.price.currency ?? "WETH";
     if (ETH_TOKENS.has(token)) {
       const decimals = data.price.decimals ?? 18;
-      const price = Number(data.price.value) / 10 ** decimals;
+      const totalPrice = Number(data.price.value) / 10 ** decimals;
+      const qty = data.remaining_quantity ?? 1;
+      const price = totalPrice / qty;
       if (price > 0) {
-        // Note: this price may be a collection-wide offer total, not per-unit.
-        // The client compares against collection offers to determine if truly item-specific.
         offer = { price, paymentToken: token };
       }
     }

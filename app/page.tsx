@@ -10,7 +10,19 @@ import CurrencyBadge from "@/components/CurrencyBadge";
 import { formatMoney } from "@/lib/format";
 import { yearlyAmount } from "@/lib/subscriptions";
 import { loadNFTPortfolio } from "@/lib/storage";
-import type { Currency, NFTPortfolio } from "@/lib/types";
+import type { Currency, NFTPortfolio, CollectionOffer } from "@/lib/types";
+
+function calculateTopNOfferValue(offers: CollectionOffer[], nftsHeld: number): number {
+  let remaining = nftsHeld;
+  let total = 0;
+  for (const offer of offers) {
+    if (remaining <= 0) break;
+    const canFill = Math.min(remaining, offer.remainingQuantity);
+    total += canFill * offer.price;
+    remaining -= canFill;
+  }
+  return total;
+}
 
 export default function Dashboard() {
   const { state, isLoaded } = useFinance();
@@ -22,7 +34,7 @@ export default function Dashboard() {
   }, []);
 
   const summary = useMemo(() => {
-    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0, nftFloorValue: 0 };
+    if (!rates) return { assets: 0, debts: 0, cash: 0, creditCards: 0, pendingIncoming: 0, annualCosts: 0, monthlyExpenses: 0, oneOffExpenses: 0, annualSubCosts: 0, monthlyRent: 0, nftOfferValue: 0 };
 
     const bankAssets = state.accounts
       .filter((a) => a.type === "bank")
@@ -33,10 +45,30 @@ export default function Dashboard() {
       return sum + convertCrypto(c.amount, priceUSD);
     }, 0);
 
-    const nftFloorETH = (nftCache?.nfts ?? []).reduce((sum, n) => sum + (n.floorPrice ?? 0), 0);
-    const nftFloorValue = nftFloorETH > 0 ? convertCrypto(nftFloorETH, rates.ETH_USD) : 0;
+    // NFT value based on best offers (not floor prices)
+    const nfts = nftCache?.nfts ?? [];
+    const collections = nftCache?.collections ?? {};
+    const nftsByCollection = new Map<string, typeof nfts>();
+    for (const nft of nfts) {
+      const key = nft.collection || "unknown";
+      if (!nftsByCollection.has(key)) nftsByCollection.set(key, []);
+      nftsByCollection.get(key)!.push(nft);
+    }
+    const nftOfferETH = Array.from(nftsByCollection.entries()).reduce((sum, [slug, items]) => {
+      const itemOfferTotal = items.reduce(
+        (s, nft) => s + (nft.bestOffer?.isItemOffer ? nft.bestOffer.price : 0), 0
+      );
+      const itemsWithBids = items.filter((nft) => nft.bestOffer?.isItemOffer).length;
+      const collOffers = collections[slug]?.offers ?? [];
+      const remainingCount = items.length - itemsWithBids;
+      const collectionOfferTotal = remainingCount > 0
+        ? calculateTopNOfferValue(collOffers, remainingCount)
+        : 0;
+      return sum + itemOfferTotal + collectionOfferTotal;
+    }, 0);
+    const nftOfferValue = nftOfferETH > 0 ? convertCrypto(nftOfferETH, rates.ETH_USD) : 0;
 
-    const assets = bankAssets + cryptoAssets + nftFloorValue;
+    const assets = bankAssets + cryptoAssets + nftOfferValue;
 
     const creditCardDebt = state.accounts
       .filter((a) => a.type === "credit_card")
@@ -85,7 +117,7 @@ export default function Dashboard() {
       oneOffExpenses,
       annualSubCosts,
       monthlyRent,
-      nftFloorValue,
+      nftOfferValue,
     };
   }, [state, rates, convert, convertCrypto, nftCache]);
 

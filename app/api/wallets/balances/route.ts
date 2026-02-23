@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const RPC_URL = process.env.ETHEREUM_RPC_URL ?? "https://eth.llamarpc.com";
+const RPC_URL = process.env.ETHEREUM_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
 
 // USDC on Ethereum mainnet (6 decimals)
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -14,17 +14,30 @@ const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const BALANCE_OF_SELECTOR = "0x70a08231";
 
 async function rpcCall(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(RPC_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const data = await res.json();
-  if (data.error) {
-    console.error(`RPC error (${method}):`, data.error);
-    return null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(RPC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    });
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      continue;
+    }
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      console.error(`RPC returned non-JSON (${method}): ${res.status} ${contentType}`);
+      return null;
+    }
+    const data = await res.json();
+    if (data.error) {
+      console.error(`RPC error (${method}):`, data.error);
+      return null;
+    }
+    return data.result;
   }
-  return data.result;
+  console.error(`RPC rate limited after 3 retries (${method})`);
+  return null;
 }
 
 async function getEthBalance(address: string): Promise<number> {
@@ -87,10 +100,8 @@ export async function GET() {
       continue;
     }
 
-    const [ethBalance, usdcBalance] = await Promise.all([
-      getEthBalance(wallet.address),
-      getUsdcBalance(wallet.address),
-    ]);
+    const ethBalance = await getEthBalance(wallet.address);
+    const usdcBalance = await getUsdcBalance(wallet.address);
 
     results.push({
       address: wallet.address,

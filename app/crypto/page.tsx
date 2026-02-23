@@ -34,6 +34,7 @@ export default function CryptoPage() {
 
   const [walletBalances, setWalletBalances] = useState<WalletBalance[]>([]);
   const [balancesLoading, setBalancesLoading] = useState(false);
+  const balancesFetched = useRef(false);
 
   const [nftPortfolio, setNftPortfolio] = useState<NFTPortfolio | null>(null);
   const [nftLoading, setNftLoading] = useState(false);
@@ -64,12 +65,16 @@ export default function CryptoPage() {
       const totalETH = data.wallets.reduce((sum, w) => sum + w.ethBalance, 0);
       const totalUSDC = data.wallets.reduce((sum, w) => sum + w.usdcBalance, 0);
 
+      // Deterministic UUIDs for wallet-derived holdings
+      const ETH_UUID = "00000000-0000-4000-a000-000000000001";
+      const USDC_UUID = "00000000-0000-4000-a000-000000000002";
+
       const holdings: CryptoHolding[] = [];
       if (totalETH > 0) {
-        holdings.push({ id: "wallet-eth", asset: "ETH", amount: totalETH, sortOrder: 0 });
+        holdings.push({ id: ETH_UUID, asset: "ETH", amount: totalETH, sortOrder: 0 });
       }
       if (totalUSDC > 0) {
-        holdings.push({ id: "wallet-usdc", asset: "USDC", amount: totalUSDC, sortOrder: 1 });
+        holdings.push({ id: USDC_UUID, asset: "USDC", amount: totalUSDC, sortOrder: 1 });
       }
       dispatch({ type: "SET_CRYPTO", payload: holdings });
     } catch (err) {
@@ -79,10 +84,11 @@ export default function CryptoPage() {
     }
   }, [state.walletAddresses.length, dispatch]);
 
-  // Fetch balances on mount
+  // Fetch balances on mount (once)
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || balancesFetched.current) return;
     if (state.walletAddresses.length > 0) {
+      balancesFetched.current = true;
       fetchBalances();
     }
   }, [isLoaded, state.walletAddresses.length, fetchBalances]);
@@ -197,6 +203,108 @@ export default function CryptoPage() {
       console.error("Failed to stream NFT offers:", err);
     } finally {
       setNftOffersLoading(false);
+    }
+  }, [updatePortfolio]);
+
+  const [refreshingSlug, setRefreshingSlug] = useState<string | null>(null);
+
+  /** Refresh offers for a single collection (Phase 2 + Phase 3 for that slug only). */
+  const refreshCollectionOffers = useCallback(async (slug: string) => {
+    const current = portfolioRef.current;
+    if (!current) return;
+
+    setRefreshingSlug(slug);
+    try {
+      // Clear existing offers for this collection
+      const cleared: NFTPortfolio = {
+        ...current,
+        nfts: current.nfts.map((nft) =>
+          nft.collection === slug
+            ? { ...nft, bestOffer: undefined } as typeof nft
+            : nft
+        ),
+        collections: {
+          ...current.collections,
+          [slug]: { ...current.collections[slug], offers: [], bestOfferPrice: null },
+        },
+      };
+      updatePortfolio(cleared);
+
+      // Phase 2: Re-fetch collection info
+      const collRes = await fetch(`/api/nfts/collections?slugs=${slug}`);
+      if (collRes.ok && collRes.body) {
+        const reader = collRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const info: CollectionInfo = JSON.parse(line);
+            const cur = portfolioRef.current;
+            if (!cur) continue;
+            const updatedCollections = { ...cur.collections, [info.slug]: info };
+            const updatedNfts = cur.nfts.map((nft) =>
+              nft.collection === info.slug
+                ? { ...nft, collectionName: info.name, floorPrice: info.floorPrice }
+                : nft
+            );
+            updatePortfolio({ ...cur, nfts: updatedNfts, collections: updatedCollections });
+          }
+        }
+      }
+
+      // Phase 3: Re-fetch per-NFT offers for this collection
+      const cur = portfolioRef.current;
+      if (!cur) return;
+      const nftKeys = cur.nfts
+        .filter((n) => n.collection === slug)
+        .map((n) => `${n.collection}:${n.identifier}`);
+
+      if (nftKeys.length > 0) {
+        const offersRes = await fetch(`/api/nfts/offers?nfts=${nftKeys.join(",")}`);
+        if (offersRes.ok && offersRes.body) {
+          const reader = offersRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const data: { slug: string; identifier: string; offer: OfferInfo | null } = JSON.parse(line);
+              const cur2 = portfolioRef.current;
+              if (!cur2) continue;
+              let resolvedOffer = data.offer;
+              if (resolvedOffer) {
+                const collBestPrice = cur2.collections[data.slug]?.bestOfferPrice ?? 0;
+                if (resolvedOffer.price > collBestPrice && collBestPrice > 0) {
+                  resolvedOffer = { ...resolvedOffer, isItemOffer: true };
+                } else {
+                  resolvedOffer = null;
+                }
+              }
+              const updatedNfts = cur2.nfts.map((nft) =>
+                nft.collection === data.slug && nft.identifier === data.identifier
+                  ? { ...nft, bestOffer: resolvedOffer }
+                  : nft
+              );
+              updatePortfolio({ ...cur2, nfts: updatedNfts });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to refresh offers for ${slug}:`, err);
+    } finally {
+      setRefreshingSlug(null);
     }
   }, [updatePortfolio]);
 
@@ -543,14 +651,25 @@ export default function CryptoPage() {
                           ? calculateTopNOfferValue(collInfo.offers, items.length)
                           : 0;
                         const offerCount = collInfo?.offers?.length ?? 0;
+                        const isRefreshingThis = refreshingSlug === slug;
                         return (
                           <div key={slug}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <div className="text-sm font-medium text-zinc-700">
-                                {collectionName}
-                                <span className="text-xs text-zinc-400 ml-1.5">
-                                  {items.length} item{items.length !== 1 && "s"}
-                                </span>
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm font-medium text-zinc-700">
+                                  {collectionName}
+                                  <span className="text-xs text-zinc-400 ml-1.5">
+                                    {items.length} item{items.length !== 1 && "s"}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => refreshCollectionOffers(slug)}
+                                  disabled={isRefreshingThis || isEnriching}
+                                  className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded hover:bg-amber-100 disabled:opacity-50"
+                                  title="Refresh offers for this collection"
+                                >
+                                  {isRefreshingThis ? "..." : "↻"}
+                                </button>
                               </div>
                               <div className="text-right">
                                 {hasPrice ? (
