@@ -637,6 +637,19 @@ export default function CryptoPage() {
                   <div className="space-y-4">
                     {Array.from(nftsByCollection.entries())
                       .sort((a, b) => {
+                        const offerVal = ([, items]: [string, typeof nfts]) => {
+                          const coll = collections[items[0]?.collection || ""];
+                          const itemBids = items.reduce(
+                            (s, n) => s + (n.bestOffer?.isItemOffer ? n.bestOffer.price : 0), 0
+                          );
+                          const withBids = items.filter((n) => n.bestOffer?.isItemOffer).length;
+                          const rem = items.length - withBids;
+                          const collVal = rem > 0 && coll?.offers
+                            ? calculateTopNOfferValue(coll.offers, rem) : 0;
+                          return itemBids + collVal;
+                        };
+                        const diff = offerVal(b) - offerVal(a);
+                        if (diff !== 0) return diff;
                         const floorA = a[1].reduce((s, n) => s + (n.floorPrice ?? 0), 0);
                         const floorB = b[1].reduce((s, n) => s + (n.floorPrice ?? 0), 0);
                         return floorB - floorA;
@@ -644,14 +657,20 @@ export default function CryptoPage() {
                       .map(([slug, items]) => {
                         const collectionFloor = items[0]?.floorPrice ?? 0;
                         const collectionName = items[0]?.collectionName || slug;
-                        const totalFloor = items.length * collectionFloor;
                         const hasPrice = collectionFloor > 0;
                         const collInfo = collections[slug];
-                        const topNValue = collInfo?.offers
-                          ? calculateTopNOfferValue(collInfo.offers, items.length)
-                          : 0;
                         const offerCount = collInfo?.offers?.length ?? 0;
                         const isRefreshingThis = refreshingSlug === slug;
+                        // Item-specific bids for this collection
+                        const itemBidTotal = items.reduce(
+                          (s, nft) => s + (nft.bestOffer?.isItemOffer ? nft.bestOffer.price : 0), 0
+                        );
+                        const itemsWithBids = items.filter((nft) => nft.bestOffer?.isItemOffer).length;
+                        const remainingCount = items.length - itemsWithBids;
+                        const collOfferTotal = remainingCount > 0 && collInfo?.offers
+                          ? calculateTopNOfferValue(collInfo.offers, remainingCount)
+                          : 0;
+                        const collOfferValue = itemBidTotal + collOfferTotal;
                         return (
                           <div key={slug}>
                             <div className="flex items-center justify-between mb-1.5">
@@ -672,25 +691,24 @@ export default function CryptoPage() {
                                 </button>
                               </div>
                               <div className="text-right">
-                                {hasPrice ? (
+                                {hasPrice || collOfferValue > 0 ? (
                                   <>
-                                    <div className="text-xs text-zinc-400">
-                                      Floor: {formatCrypto(collectionFloor)} ETH
-                                    </div>
-                                    {topNValue > 0 && (
-                                      <div className="text-xs text-amber-600">
-                                        Offer Value ({items.length} best): {formatCrypto(topNValue)} ETH
-                                      </div>
+                                    {collOfferValue > 0 && (
+                                      <>
+                                        <div className="font-mono text-sm font-semibold text-amber-600">
+                                          {formatCrypto(collOfferValue)} ETH
+                                        </div>
+                                        {rates && (
+                                          <div className="font-mono text-xs text-amber-500">
+                                            {formatMoney(convertCrypto(collOfferValue, rates.ETH_USD), displayCurrency)}
+                                          </div>
+                                        )}
+                                      </>
                                     )}
-                                    {collInfo?.bestOfferPrice != null && collInfo.bestOfferPrice > 0 && (
+                                    {hasPrice && (
                                       <div className="text-xs text-zinc-400">
-                                        Top offer: {formatCrypto(collInfo.bestOfferPrice)} ETH
-                                        {offerCount > 0 && ` (${offerCount} total)`}
-                                      </div>
-                                    )}
-                                    {rates && (
-                                      <div className="font-mono text-sm text-zinc-700">
-                                        {formatMoney(convertCrypto(totalFloor, rates.ETH_USD), displayCurrency)}
+                                        Floor: {formatCrypto(collectionFloor)} ETH
+                                        {offerCount > 0 && ` · ${offerCount} offer${offerCount !== 1 ? "s" : ""}`}
                                       </div>
                                     )}
                                   </>
