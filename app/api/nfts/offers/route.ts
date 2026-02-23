@@ -1,9 +1,8 @@
 import { getSession } from "@/lib/auth";
-import { openseaFetch, delay } from "@/lib/opensea";
+import { openseaFetch, delay, RATE_LIMIT_DELAY } from "@/lib/opensea";
 import type { OfferInfo } from "@/lib/types";
 
 const CONCURRENCY = 1;
-const RATE_LIMIT_DELAY = 800;
 
 // Payment tokens treated as ETH-equivalent
 const ETH_TOKENS = new Set(["WETH", "ETH"]);
