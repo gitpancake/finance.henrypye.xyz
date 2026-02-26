@@ -328,7 +328,7 @@ function InlineRow({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-600 lg:opacity-40 lg:group-hover:opacity-100 transition-opacity"
+              className="text-xs text-red-400 hover:text-red-500 lg:opacity-40 lg:group-hover:opacity-100 transition-opacity cursor-pointer"
             >
               Del
             </button>
@@ -552,7 +552,7 @@ function InlineRowCells({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-600 lg:opacity-40 lg:group-hover:opacity-100 transition-opacity"
+              className="text-xs text-red-400 hover:text-red-500 lg:opacity-40 lg:group-hover:opacity-100 transition-opacity cursor-pointer"
             >
               Del
             </button>
