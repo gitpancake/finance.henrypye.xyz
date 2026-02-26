@@ -81,6 +81,7 @@ export const NAV_ITEMS: { href: string; label: string; divider?: boolean }[] = [
   { href: "/budget", label: "Monthly Budget" },
   { href: "/annual", label: "Subscriptions" },
   { href: "/pet", label: "Pet" },
+  { href: "/shared", label: "Shared", divider: true },
   { href: "/settings", label: "Settings", divider: true },
   { href: "/tax", label: "Tax" },
   { href: "/reports", label: "Reports" },

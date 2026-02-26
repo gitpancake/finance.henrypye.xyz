@@ -3,6 +3,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
+import { SharedProvider } from "@/contexts/SharedContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import Shell from "./Shell";
 
@@ -73,9 +74,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     return (
       <AuthProvider user={user}>
         <FinanceProvider userId={user.userId}>
-          <CurrencyProvider>
-            <Shell>{children}</Shell>
-          </CurrencyProvider>
+          <SharedProvider userId={user.userId}>
+            <CurrencyProvider>
+              <Shell>{children}</Shell>
+            </CurrencyProvider>
+          </SharedProvider>
         </FinanceProvider>
       </AuthProvider>
     );

@@ -168,6 +168,44 @@ export interface SharedPetExpense extends PetExpense {
   ownerName: string;
 }
 
+// Shared categories (independent from FinanceState)
+
+export interface SharedCategoryMember {
+  id: string;
+  userId: string;
+  username: string;
+}
+
+export interface SharedCategory {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  name: string;
+  description: string;
+  currency: Currency;
+  members: SharedCategoryMember[];
+  itemCount: number;
+  totalSpent: number;
+}
+
+export interface SharedItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  amount: number;
+  currency: Currency;
+  date: string;
+  notes: string;
+  addedBy: string;
+  addedByName: string;
+  sortOrder: number;
+}
+
+export interface SharedState {
+  categories: SharedCategory[];
+  itemsByCategory: Record<string, SharedItem[]>;
+}
+
 export interface FinanceState {
   accounts: Account[];
   debts: Debt[];
