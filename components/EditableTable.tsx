@@ -715,17 +715,19 @@ export default function EditableTable({
           </button>
         )}
       </div>
-      {hasDrag ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          {tableContent}
-        </DndContext>
-      ) : (
-        tableContent
-      )}
+      <div className="overflow-x-auto">
+        {hasDrag ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            {tableContent}
+          </DndContext>
+        ) : (
+          tableContent
+        )}
+      </div>
     </div>
   );
 }
