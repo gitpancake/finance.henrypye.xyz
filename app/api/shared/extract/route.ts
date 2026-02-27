@@ -41,10 +41,12 @@ export async function POST(req: Request) {
         },
     {
       type: "text",
-      text: `Extract all individual items and their prices from this receipt/invoice. Return a JSON array with objects having "name" (string) and "amount" (number, positive). Include tax lines, delivery fees, tips, etc. as separate items. Do NOT include totals or subtotals as items — only individual line items.
+      text: `Extract all individual items and their prices from this receipt/invoice. Return a JSON object with:
+1. "items": an array of objects with "name" (string) and "amount" (number, positive). Include tax lines, delivery fees, tips, etc. as separate items. Do NOT include totals or subtotals.
+2. "suggestedName": a short description (2-6 words) for this receipt as a whole, e.g. "IKEA Furniture Order" or "Amazon Kitchen Supplies". Base it on the store/vendor name and the general category of items.
 
-Return ONLY valid JSON array, no other text. Example:
-[{"name": "IKEA KALLAX Shelf", "amount": 89.99}, {"name": "Delivery Fee", "amount": 59.00}]`,
+Return ONLY valid JSON, no other text. Example:
+{"items": [{"name": "KALLAX Shelf", "amount": 89.99}, {"name": "Delivery Fee", "amount": 59.00}], "suggestedName": "IKEA Furniture Order"}`,
     },
   ];
 
@@ -58,10 +60,16 @@ Return ONLY valid JSON array, no other text. Example:
 
   try {
     // Extract JSON from response (handle potential markdown wrapping)
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("No JSON array found");
-    const items = JSON.parse(jsonMatch[0]) as { name: string; amount: number }[];
-    return Response.json({ items });
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON object found");
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      items: { name: string; amount: number }[];
+      suggestedName?: string;
+    };
+    return Response.json({
+      items: parsed.items,
+      suggestedName: parsed.suggestedName ?? "",
+    });
   } catch {
     return Response.json({ error: "Failed to parse receipt", raw: text }, { status: 422 });
   }

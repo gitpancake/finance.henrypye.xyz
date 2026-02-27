@@ -11,11 +11,14 @@ interface ExtractedItem {
 
 interface ReceiptUploadProps {
   onAddItems: (items: { name: string; amount: number }[]) => void;
+  onAddGrouped: (name: string, amount: number) => void;
   defaultCurrency: Currency;
 }
 
-export default function ReceiptUpload({ onAddItems, defaultCurrency }: ReceiptUploadProps) {
+export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrency }: ReceiptUploadProps) {
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
+  const [suggestedName, setSuggestedName] = useState("");
+  const [groupedName, setGroupedName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -44,8 +47,10 @@ export default function ReceiptUpload({ onAddItems, defaultCurrency }: ReceiptUp
         throw new Error(data.error || "Failed to extract receipt");
       }
 
-      const { items } = await res.json();
+      const { items, suggestedName: suggested } = await res.json();
       setExtractedItems(items.map((i: { name: string; amount: number }) => ({ ...i, selected: true })));
+      setSuggestedName(suggested || "");
+      setGroupedName(suggested || "");
       setShowPreview(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to process receipt");
@@ -61,23 +66,32 @@ export default function ReceiptUpload({ onAddItems, defaultCurrency }: ReceiptUp
     );
   };
 
-  const handleAdd = () => {
+  const handleAddIndividual = () => {
     const selected = extractedItems.filter((i) => i.selected);
     if (selected.length === 0) return;
     onAddItems(selected.map(({ name, amount }) => ({ name, amount })));
-    setShowPreview(false);
-    setExtractedItems([]);
+    reset();
   };
 
-  const handleCancel = () => {
+  const handleAddAsGrouped = () => {
+    if (!groupedName.trim()) return;
+    onAddGrouped(groupedName.trim(), selectedTotal);
+    reset();
+  };
+
+  const reset = () => {
     setShowPreview(false);
     setExtractedItems([]);
+    setSuggestedName("");
+    setGroupedName("");
     setError("");
   };
 
   const selectedTotal = extractedItems
     .filter((i) => i.selected)
     .reduce((s, i) => s + i.amount, 0);
+
+  const selectedCount = extractedItems.filter((i) => i.selected).length;
 
   return (
     <div>
@@ -99,7 +113,7 @@ export default function ReceiptUpload({ onAddItems, defaultCurrency }: ReceiptUp
         <div className="mt-3 rounded-lg border border-zinc-200 bg-white p-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold text-zinc-700">
-              Extracted Items ({extractedItems.filter((i) => i.selected).length}/{extractedItems.length} selected)
+              Extracted Items ({selectedCount}/{extractedItems.length} selected)
             </span>
             <span className="font-mono text-xs text-zinc-500">
               Total: {defaultCurrency} {selectedTotal.toFixed(2)}
@@ -136,16 +150,41 @@ export default function ReceiptUpload({ onAddItems, defaultCurrency }: ReceiptUp
             </tbody>
           </table>
 
+          {/* Grouped add */}
+          <div className="mt-3 rounded-md border border-dashed border-zinc-200 bg-zinc-50 p-3">
+            <div className="text-xs font-medium text-zinc-500 mb-2">Add as single line item</div>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={groupedName}
+                onChange={(e) => setGroupedName(e.target.value)}
+                placeholder="Description"
+                className="flex-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
+                onKeyDown={(e) => e.key === "Enter" && handleAddAsGrouped()}
+              />
+              <span className="font-mono text-sm text-zinc-500 whitespace-nowrap">
+                {defaultCurrency} {selectedTotal.toFixed(2)}
+              </span>
+              <button
+                onClick={handleAddAsGrouped}
+                disabled={selectedCount === 0 || !groupedName.trim()}
+                className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40 whitespace-nowrap"
+              >
+                Add Grouped
+              </button>
+            </div>
+          </div>
+
           <div className="mt-3 flex gap-2">
             <button
-              onClick={handleAdd}
-              disabled={extractedItems.filter((i) => i.selected).length === 0}
-              className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
+              onClick={handleAddIndividual}
+              disabled={selectedCount === 0}
+              className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40"
             >
-              Add Selected Items
+              Add as {selectedCount} Separate Item{selectedCount !== 1 ? "s" : ""}
             </button>
             <button
-              onClick={handleCancel}
+              onClick={reset}
               className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
             >
               Cancel

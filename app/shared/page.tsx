@@ -278,6 +278,22 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
     dispatch({ type: "ADD_ITEMS", payload: { categoryId, items: newItems } });
   };
 
+  const handleReceiptGrouped = (name: string, amount: number) => {
+    const item: SharedItem = {
+      id: crypto.randomUUID(),
+      categoryId,
+      name,
+      amount: Math.abs(amount),
+      currency: category.currency,
+      date: new Date().toISOString().slice(0, 10),
+      notes: "",
+      addedBy: user.userId,
+      addedByName: user.username,
+      sortOrder: Math.max(0, ...items.map((it) => it.sortOrder), 0) + 1,
+    };
+    dispatch({ type: "ADD_ITEM", payload: item });
+  };
+
   const handleAddMember = () => {
     if (!selectedUser) return;
     const userInfo = platformUsers.find((u) => u.value === selectedUser);
@@ -394,6 +410,7 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
       <div className="mb-4 mt-4">
         <ReceiptUpload
           onAddItems={handleReceiptItems}
+          onAddGrouped={handleReceiptGrouped}
           defaultCurrency={category.currency}
         />
       </div>
