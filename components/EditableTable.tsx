@@ -45,6 +45,7 @@ interface EditableTableProps {
   defaultValues?: Record<string, unknown>;
   usersData?: UserOption[];
   onReorder?: (orderedIds: string[]) => void;
+  rowActions?: (row: Row) => React.ReactNode;
 }
 
 function InlineRow({
@@ -56,6 +57,7 @@ function InlineRow({
   isNew,
   usersData,
   dragHandle,
+  extraActions,
 }: {
   columns: Column[];
   data: Record<string, unknown>;
@@ -65,6 +67,7 @@ function InlineRow({
   isNew?: boolean;
   usersData?: UserOption[];
   dragHandle?: React.ReactNode;
+  extraActions?: React.ReactNode;
 }) {
   const [values, setValues] = useState<Record<string, unknown>>(data);
   const [saved, setSaved] = useState(false);
@@ -325,6 +328,7 @@ function InlineRow({
           >
             Saved
           </span>
+          {extraActions}
           {onDelete && (
             <button
               onClick={onDelete}
@@ -345,12 +349,14 @@ function SortableRow({
   onUpdate,
   onDelete,
   usersData,
+  rowActions,
 }: {
   row: Row;
   columns: Column[];
   onUpdate: (row: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
   usersData?: UserOption[];
+  rowActions?: (row: Row) => React.ReactNode;
 }) {
   const {
     attributes,
@@ -397,6 +403,7 @@ function SortableRow({
         onSave={onUpdate}
         onDelete={() => onDelete(row.id)}
         usersData={usersData}
+        extraActions={rowActions?.(row)}
       />
     </tr>
   );
@@ -409,12 +416,14 @@ function InlineRowCells({
   onSave,
   onDelete,
   usersData,
+  extraActions,
 }: {
   columns: Column[];
   data: Record<string, unknown>;
   onSave: (row: Record<string, unknown>) => void;
   onDelete?: () => void;
   usersData?: UserOption[];
+  extraActions?: React.ReactNode;
 }) {
   const [values, setValues] = useState<Record<string, unknown>>(data);
   const [saved, setSaved] = useState(false);
@@ -549,6 +558,7 @@ function InlineRowCells({
           >
             Saved
           </span>
+          {extraActions}
           {onDelete && (
             <button
               onClick={onDelete}
@@ -573,6 +583,7 @@ export default function EditableTable({
   defaultValues,
   usersData,
   onReorder,
+  rowActions,
 }: EditableTableProps) {
   const [showAdd, setShowAdd] = useState(false);
 
@@ -640,6 +651,7 @@ export default function EditableTable({
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 usersData={usersData}
+                rowActions={rowActions}
               />
             ))}
           </SortableContext>
@@ -652,6 +664,7 @@ export default function EditableTable({
               onSave={onUpdate}
               onDelete={() => onDelete(row.id as string)}
               usersData={usersData}
+              extraActions={rowActions?.(row)}
             />
           ))
         )}

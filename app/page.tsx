@@ -74,10 +74,9 @@ export default function Dashboard() {
       .filter((a) => a.type === "credit_card")
       .reduce((sum, a) => sum + convert(Math.abs(a.balance), a.currency), 0);
 
-    const personalDebt = state.debts.reduce(
-      (sum, d) => sum + convert(d.amount, d.currency),
-      0
-    );
+    const personalDebt = state.debts
+      .filter((d) => !d.paidOff)
+      .reduce((sum, d) => sum + convert(d.amount, d.currency), 0);
 
     const pendingIncoming = state.incomings
       .filter((i) => i.status === "pending")
@@ -247,7 +246,7 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ))}
-              {state.debts.map((d) => (
+              {state.debts.filter((d) => !d.paidOff).map((d) => (
                 <tr key={d.id}>
                   <td>{d.creditor}</td>
                   <td>

@@ -21,6 +21,7 @@ export interface Debt {
   currency: Currency;
   amount: number;
   notes: string;
+  paidOff: boolean;
   sortOrder: number;
 }
 

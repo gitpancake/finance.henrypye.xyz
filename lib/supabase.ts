@@ -55,12 +55,13 @@ function toDebt(row: Record<string, unknown>): Debt {
     currency: row.currency as Debt["currency"],
     amount: Number(row.amount),
     notes: (row.notes as string) ?? "",
+    paidOff: (row.paid_off as boolean) ?? false,
     sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
 function fromDebt(d: Debt, userId: string) {
-  return { id: d.id, creditor: d.creditor, currency: d.currency, amount: d.amount, notes: d.notes, sort_order: d.sortOrder, user_id: userId };
+  return { id: d.id, creditor: d.creditor, currency: d.currency, amount: d.amount, notes: d.notes, paid_off: d.paidOff, sort_order: d.sortOrder, user_id: userId };
 }
 
 function toFamilyDebt(row: Record<string, unknown>): FamilyDebt {
