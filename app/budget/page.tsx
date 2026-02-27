@@ -39,10 +39,13 @@ function formatMonth(month: string): string {
 
 export default function BudgetPage() {
   const { state, dispatch, isLoaded } = useFinance();
-  const { displayCurrency, convert } = useCurrency();
+  const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
   const [month, setMonth] = useState(getCurrentMonth);
 
-  const accountOptions: UserOption[] = state.accounts.map((a) => ({ value: a.id, label: a.name }));
+  const accountOptions: UserOption[] = [
+    ...state.accounts.map((a) => ({ value: a.id, label: a.name })),
+    ...state.walletAddresses.map((w) => ({ value: w.id, label: `${w.label || w.address.slice(0, 8)} (${w.chain})` })),
+  ];
 
   const budget = state.budgets.find((b) => b.month === month);
 
@@ -87,11 +90,29 @@ export default function BudgetPage() {
 
     const byAccount = Array.from(accountMap.entries()).map(([accountId, data]) => {
       const account = accountId ? state.accounts.find((a) => a.id === accountId) : null;
-      const accountBalance = account ? convert(account.balance, account.currency) : null;
+      const wallet = !account && accountId ? state.walletAddresses.find((w) => w.id === accountId) : null;
+
+      let accountBalance: number | null = null;
+      let accountName = "Unassigned";
+
+      if (account) {
+        accountBalance = convert(account.balance, account.currency);
+        accountName = account.name;
+      } else if (wallet && rates) {
+        // Sum crypto balances for this wallet from state.crypto
+        const walletCrypto = state.crypto.reduce((sum, c) => {
+          if (c.asset === "GBP-E") return sum + convert(c.amount, "GBP");
+          const priceUSD = c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
+          return sum + convertCrypto(c.amount, priceUSD);
+        }, 0);
+        accountBalance = walletCrypto;
+        accountName = wallet.label || wallet.address.slice(0, 8);
+      }
+
       const deficit = accountBalance !== null ? data.total - accountBalance : null;
       return {
         accountId,
-        accountName: account?.name ?? "Unassigned",
+        accountName,
         accountCurrency: account?.currency ?? null,
         accountBalance,
         remaining: data.total,
@@ -101,7 +122,7 @@ export default function BudgetPage() {
     });
 
     return { items, byAccount };
-  }, [isCurrentMonth, expenseItems, today, state.accounts, convert]);
+  }, [isCurrentMonth, expenseItems, today, state.accounts, state.walletAddresses, state.crypto, convert, convertCrypto, rates]);
 
   const saveIncome = () => {
     if (incomeItem) {

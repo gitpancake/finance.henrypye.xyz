@@ -21,7 +21,10 @@ export default function AnnualPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
 
-  const accountOptions: UserOption[] = state.accounts.map((a) => ({ value: a.id, label: a.name }));
+  const accountOptions: UserOption[] = [
+    ...state.accounts.map((a) => ({ value: a.id, label: a.name })),
+    ...state.walletAddresses.map((w) => ({ value: w.id, label: `${w.label || w.address.slice(0, 8)} (${w.chain})` })),
+  ];
 
   if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
 
