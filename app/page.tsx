@@ -41,6 +41,7 @@ export default function Dashboard() {
       .reduce((sum, a) => sum + convert(a.balance, a.currency), 0);
 
     const cryptoAssets = state.crypto.reduce((sum, c) => {
+      if (c.asset === "GBP-E") return sum + convert(c.amount, "GBP");
       const priceUSD = c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
       return sum + convertCrypto(c.amount, priceUSD);
     }, 0);
@@ -286,8 +287,9 @@ export default function Dashboard() {
                 ))}
               {rates &&
                 state.crypto.map((c) => {
-                  const priceUSD =
-                    c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
+                  const displayValue = c.asset === "GBP-E"
+                    ? convert(c.amount, "GBP")
+                    : convertCrypto(c.amount, c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD);
                   return (
                     <tr key={c.id}>
                       <td>{c.asset}</td>
@@ -303,10 +305,7 @@ export default function Dashboard() {
                         {c.amount.toFixed(c.asset === "ETH" ? 4 : 2)} {c.asset}
                       </td>
                       <td className="num">
-                        {formatMoney(
-                          convertCrypto(c.amount, priceUSD),
-                          displayCurrency
-                        )}
+                        {formatMoney(displayValue, displayCurrency)}
                       </td>
                     </tr>
                   );

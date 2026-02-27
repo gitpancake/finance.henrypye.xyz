@@ -6,16 +6,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const RPC_URL = process.env.ETHEREUM_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
+const ETHEREUM_RPC_URL = process.env.ETHEREUM_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
+const GNOSIS_RPC_URL = process.env.GNOSIS_RPC_URL ?? "https://rpc.gnosischain.com";
 
 // USDC on Ethereum mainnet (6 decimals)
 const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+// GBP-E (Monerium GBP emoney) on Gnosis (18 decimals)
+const GBPE_ADDRESS = "0x5Cb9073902F2035222B9749F8fB0c9BFe5527108";
 // ERC-20 balanceOf(address) selector
 const BALANCE_OF_SELECTOR = "0x70a08231";
 
-async function rpcCall(method: string, params: unknown[]): Promise<unknown> {
+async function rpcCall(rpcUrl: string, method: string, params: unknown[]): Promise<unknown> {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(RPC_URL, {
+    const res = await fetch(rpcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
@@ -41,22 +44,21 @@ async function rpcCall(method: string, params: unknown[]): Promise<unknown> {
 }
 
 async function getEthBalance(address: string): Promise<number> {
-  const result = await rpcCall("eth_getBalance", [address, "latest"]);
+  const result = await rpcCall(ETHEREUM_RPC_URL, "eth_getBalance", [address, "latest"]);
   if (!result || typeof result !== "string") return 0;
   return Number(BigInt(result)) / 1e18;
 }
 
-async function getUsdcBalance(address: string): Promise<number> {
-  // Encode balanceOf(address): selector + address padded to 32 bytes
-  const paddedAddress = address.toLowerCase().replace("0x", "").padStart(64, "0");
+async function getErc20Balance(rpcUrl: string, tokenAddress: string, walletAddress: string, decimals: number): Promise<number> {
+  const paddedAddress = walletAddress.toLowerCase().replace("0x", "").padStart(64, "0");
   const callData = BALANCE_OF_SELECTOR + paddedAddress;
 
-  const result = await rpcCall("eth_call", [
-    { to: USDC_ADDRESS, data: callData },
+  const result = await rpcCall(rpcUrl, "eth_call", [
+    { to: tokenAddress, data: callData },
     "latest",
   ]);
   if (!result || typeof result !== "string" || result === "0x") return 0;
-  return Number(BigInt(result)) / 1e6; // USDC has 6 decimals
+  return Number(BigInt(result)) / 10 ** decimals;
 }
 
 export interface WalletBalance {
@@ -65,6 +67,7 @@ export interface WalletBalance {
   chain: string;
   ethBalance: number;
   usdcBalance: number;
+  gbpeBalance: number;
 }
 
 export async function GET() {
@@ -89,27 +92,41 @@ export async function GET() {
   const results: WalletBalance[] = [];
 
   for (const wallet of wallets) {
-    if (wallet.chain !== "ethereum") {
+    if (wallet.chain === "ethereum") {
+      const [ethBalance, usdcBalance] = await Promise.all([
+        getEthBalance(wallet.address),
+        getErc20Balance(ETHEREUM_RPC_URL, USDC_ADDRESS, wallet.address, 6),
+      ]);
+
+      results.push({
+        address: wallet.address,
+        label: wallet.label || wallet.address.slice(0, 8),
+        chain: wallet.chain,
+        ethBalance,
+        usdcBalance,
+        gbpeBalance: 0,
+      });
+    } else if (wallet.chain === "gnosis") {
+      const gbpeBalance = await getErc20Balance(GNOSIS_RPC_URL, GBPE_ADDRESS, wallet.address, 18);
+
       results.push({
         address: wallet.address,
         label: wallet.label || wallet.address.slice(0, 8),
         chain: wallet.chain,
         ethBalance: 0,
         usdcBalance: 0,
+        gbpeBalance,
       });
-      continue;
+    } else {
+      results.push({
+        address: wallet.address,
+        label: wallet.label || wallet.address.slice(0, 8),
+        chain: wallet.chain,
+        ethBalance: 0,
+        usdcBalance: 0,
+        gbpeBalance: 0,
+      });
     }
-
-    const ethBalance = await getEthBalance(wallet.address);
-    const usdcBalance = await getUsdcBalance(wallet.address);
-
-    results.push({
-      address: wallet.address,
-      label: wallet.label || wallet.address.slice(0, 8),
-      chain: wallet.chain,
-      ethBalance,
-      usdcBalance,
-    });
   }
 
   return Response.json({ wallets: results });

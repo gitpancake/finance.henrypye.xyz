@@ -14,6 +14,7 @@ interface WalletBalance {
   chain: string;
   ethBalance: number;
   usdcBalance: number;
+  gbpeBalance: number;
 }
 
 function calculateTopNOfferValue(offers: CollectionOffer[], nftsHeld: number): number {
@@ -30,7 +31,7 @@ function calculateTopNOfferValue(offers: CollectionOffer[], nftsHeld: number): n
 
 export default function CryptoPage() {
   const { state, dispatch, isLoaded } = useFinance();
-  const { displayCurrency, convertCrypto, rates } = useCurrency();
+  const { displayCurrency, convert, convertCrypto, rates } = useCurrency();
 
   const [walletBalances, setWalletBalances] = useState<WalletBalance[]>([]);
   const [balancesLoading, setBalancesLoading] = useState(false);
@@ -64,10 +65,12 @@ export default function CryptoPage() {
       // Aggregate totals across all wallets
       const totalETH = data.wallets.reduce((sum, w) => sum + w.ethBalance, 0);
       const totalUSDC = data.wallets.reduce((sum, w) => sum + w.usdcBalance, 0);
+      const totalGBPE = data.wallets.reduce((sum, w) => sum + w.gbpeBalance, 0);
 
       // Deterministic UUIDs for wallet-derived holdings
       const ETH_UUID = "00000000-0000-4000-a000-000000000001";
       const USDC_UUID = "00000000-0000-4000-a000-000000000002";
+      const GBPE_UUID = "00000000-0000-4000-a000-000000000003";
 
       const holdings: CryptoHolding[] = [];
       if (totalETH > 0) {
@@ -75,6 +78,9 @@ export default function CryptoPage() {
       }
       if (totalUSDC > 0) {
         holdings.push({ id: USDC_UUID, asset: "USDC", amount: totalUSDC, sortOrder: 1 });
+      }
+      if (totalGBPE > 0) {
+        holdings.push({ id: GBPE_UUID, asset: "GBP-E", amount: totalGBPE, sortOrder: 2 });
       }
       dispatch({ type: "SET_CRYPTO", payload: holdings });
     } catch (err) {
@@ -393,6 +399,7 @@ export default function CryptoPage() {
 
   const total = rates
     ? state.crypto.reduce((sum, c) => {
+        if (c.asset === "GBP-E") return sum + convert(c.amount, "GBP");
         const priceUSD = c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
         return sum + convertCrypto(c.amount, priceUSD);
       }, 0)
@@ -435,6 +442,7 @@ export default function CryptoPage() {
 
   const totalETH = walletBalances.reduce((sum, w) => sum + w.ethBalance, 0);
   const totalUSDC = walletBalances.reduce((sum, w) => sum + w.usdcBalance, 0);
+  const totalGBPE = walletBalances.reduce((sum, w) => sum + w.gbpeBalance, 0);
 
   return (
     <div>
@@ -476,6 +484,7 @@ export default function CryptoPage() {
                   <th>Wallet</th>
                   <th style={{ textAlign: "right" }}>ETH</th>
                   <th style={{ textAlign: "right" }}>USDC</th>
+                  <th style={{ textAlign: "right" }}>GBP-E</th>
                   {rates && (
                     <th style={{ textAlign: "right" }}>Value ({displayCurrency})</th>
                   )}
@@ -485,6 +494,7 @@ export default function CryptoPage() {
                 {walletBalances.map((w) => {
                   const ethValue = rates ? convertCrypto(w.ethBalance, rates.ETH_USD) : 0;
                   const usdcValue = rates ? convertCrypto(w.usdcBalance, rates.USDC_USD) : 0;
+                  const gbpeValue = rates ? convert(w.gbpeBalance, "GBP") : 0;
                   return (
                     <tr key={w.address}>
                       <td>
@@ -493,8 +503,9 @@ export default function CryptoPage() {
                       </td>
                       <td className="num">{formatCrypto(w.ethBalance)}</td>
                       <td className="num">{formatCrypto(w.usdcBalance)}</td>
+                      <td className="num">{w.gbpeBalance.toFixed(2)}</td>
                       {rates && (
-                        <td className="num">{formatMoney(ethValue + usdcValue, displayCurrency)}</td>
+                        <td className="num">{formatMoney(ethValue + usdcValue + gbpeValue, displayCurrency)}</td>
                       )}
                     </tr>
                   );
@@ -504,6 +515,7 @@ export default function CryptoPage() {
                     <td>Total</td>
                     <td className="num">{formatCrypto(totalETH)}</td>
                     <td className="num">{formatCrypto(totalUSDC)}</td>
+                    <td className="num">{totalGBPE.toFixed(2)}</td>
                     {rates && (
                       <td className="num">{formatMoney(total, displayCurrency)}</td>
                     )}

@@ -2,7 +2,7 @@ export type Currency = "CAD" | "USD" | "GBP" | "EUR";
 
 export type AccountType = "bank" | "credit_card";
 
-export type CryptoAsset = "ETH" | "USDC";
+export type CryptoAsset = "ETH" | "USDC" | "GBP-E";
 
 export interface Account {
   id: string;

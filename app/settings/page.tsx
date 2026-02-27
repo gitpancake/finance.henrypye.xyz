@@ -81,6 +81,7 @@ export default function SettingsPage() {
                   className="flex-shrink-0 text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-zinc-400"
                 >
                   <option value="ethereum">Ethereum</option>
+                  <option value="gnosis">Gnosis</option>
                   <option value="base">Base</option>
                   <option value="polygon">Polygon</option>
                 </select>
