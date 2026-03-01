@@ -29,10 +29,11 @@ function buildPrompt(data: FinanceState, nftPortfolio?: NFTPortfolio | null): st
     }
   }
 
-  // Debts
-  if (data.debts.length > 0) {
+  // Debts (only active ones)
+  const activeDebts = data.debts.filter((d) => !d.paidOff);
+  if (activeDebts.length > 0) {
     sections.push("\n## Debts");
-    for (const d of data.debts) {
+    for (const d of activeDebts) {
       sections.push(`- Owed to ${d.creditor}: ${d.currency} ${d.amount}${d.notes ? ` — ${d.notes}` : ""}`);
     }
   }
