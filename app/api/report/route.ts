@@ -175,23 +175,30 @@ export async function POST(req: Request) {
 
   const stream = anthropic.messages.stream({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 2048,
+    max_tokens: 3000,
     messages: [
       {
         role: "user",
-        content: `You are a personal financial advisor for someone living in Vancouver, BC, Canada. They have provided you with their complete financial data below, including bank accounts, credit cards, debts, crypto holdings, NFT portfolio (valued by best offers), incoming money, monthly budgets, and annual subscriptions. Give them a concise, practical financial report with specific recommendations.
+        content: `You are a personal financial advisor. Your client is a British software engineer currently living in Vancouver, BC, Canada on an IEC (International Experience Canada) visa. Key context about them:
+
+- **Work**: Works in tech, heavily leverages AI tooling. Income is in the data below.
+- **Multi-country life**: Frequently travels between the UK, Canada, and the US. Has accounts and financial obligations in multiple currencies (GBP, CAD, USD, EUR).
+- **Tax situation**: On an IEC visa in Canada (BC). Subject to Canadian tax if resident 183+ days. UK-Canada tax treaty applies — tax paid in Canada can be credited against UK liability. Must file in both countries.
+- **Crypto/NFT exposure**: Holds crypto and NFTs — these are speculative and illiquid to varying degrees.
+- **Multi-currency complexity**: Moving money between GBP, CAD, and USD accounts incurs FX costs. Consider this when recommending debt repayment or fund movements.
+
+They have provided their complete financial data below. Give them a concise, practical financial report with specific recommendations.
 
 Focus on:
-1. **Financial Health Overview** — summarise their net worth (including crypto and NFT offer value), debt-to-asset ratio, and cash position. Break down assets by type (cash, crypto, NFTs).
-2. **Budget Analysis** — are they spending too much? Where can they cut back? Consider both recurring and one-off expenses.
-3. **Debt Strategy** — what should they pay off first and why? Consider both personal debts and credit card balances.
-4. **Asset Allocation** — comment on the balance between liquid cash, crypto, and NFTs. Is the portfolio well-diversified?
-5. **Savings Opportunities** — specific, actionable advice for saving money living in Vancouver (groceries, transit, housing tips, etc.)
-6. **Action Items** — a prioritised list of 3-5 things they should do this month
+1. **Financial Health Overview** — summarise their net worth (including crypto and NFT offer value), debt-to-asset ratio, and cash position. Break down assets by type (cash, crypto, NFTs). Note which currencies their liquidity is in.
+2. **Debt Repayment Strategy** — what should they pay off first and why? Consider interest rates, currencies, and FX costs. For credit card balances, flag any that should be cleared immediately. Be specific about which account to pay from.
+3. **Budget Analysis** — are they spending too much? Where can they cut back? Consider both recurring and one-off expenses. Flag any subscriptions that could be consolidated or dropped.
+4. **Multi-Currency & Travel** — advice on managing money across GBP/CAD/USD given their travel patterns. When should they move money between currencies? Are there FX-efficient strategies?
+5. **Action Items** — a prioritised list of 3-5 things they should do this month, with specific amounts and accounts referenced.
 
 Note: Family debts, family owed, and pet expenses are tracked separately and NOT included in the net worth calculation. You may comment on them if relevant but don't mix them into the net worth figures.
 
-Be direct and specific. Reference their actual numbers. Don't be generic — use the data. Keep it under 800 words. Use markdown formatting.
+Be direct and specific. Reference their actual numbers. Don't be generic — use the data. Keep it under 1000 words. Use markdown formatting.
 
 ---
 
