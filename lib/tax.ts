@@ -4,15 +4,22 @@ import {
   FEDERAL_BASIC_PERSONAL_AMOUNT,
   BC_BRACKETS_2026,
   BC_BASIC_PERSONAL_AMOUNT,
+  FEDERAL_SPOUSE_AMOUNT,
+  BC_SPOUSE_AMOUNT,
   CPP_2026,
   CPP2_2026,
   EI_2026,
 } from "./constants";
 
+export interface TaxOptions {
+  claimBPA?: boolean;
+  claimSpouseAmount?: boolean;
+}
+
 function calcBracketTax(
   income: number,
   brackets: { min: number; max: number; rate: number }[],
-  basicPersonalAmount: number
+  creditAmounts: number[]
 ): { total: number; byBracket: { bracket: string; taxableInBracket: number; tax: number }[] } {
   let totalTax = 0;
   const byBracket: { bracket: string; taxableInBracket: number; tax: number }[] = [];
@@ -28,9 +35,10 @@ function calcBracketTax(
     byBracket.push({ bracket: label, taxableInBracket, tax });
   }
 
-  // Basic personal amount is a non-refundable credit at the lowest marginal rate
-  const bpaCredit = basicPersonalAmount * brackets[0].rate;
-  totalTax = Math.max(0, totalTax - bpaCredit);
+  // Non-refundable credits are applied at the lowest marginal rate
+  const totalCredits = creditAmounts.reduce((sum, amt) => sum + amt, 0);
+  const creditValue = totalCredits * brackets[0].rate;
+  totalTax = Math.max(0, totalTax - creditValue);
 
   return { total: totalTax, byBracket };
 }
@@ -53,7 +61,7 @@ function calcEI(income: number): number {
   return Math.min(insurable * EI_2026.rate, EI_2026.maxPremium);
 }
 
-export function calculateTax(annualGrossCAD: number): TaxBreakdown {
+export function calculateTax(annualGrossCAD: number, options?: TaxOptions): TaxBreakdown {
   if (annualGrossCAD <= 0) {
     return {
       federalTax: 0,
@@ -70,8 +78,19 @@ export function calculateTax(annualGrossCAD: number): TaxBreakdown {
     };
   }
 
-  const federal = calcBracketTax(annualGrossCAD, FEDERAL_BRACKETS_2026, FEDERAL_BASIC_PERSONAL_AMOUNT);
-  const provincial = calcBracketTax(annualGrossCAD, BC_BRACKETS_2026, BC_BASIC_PERSONAL_AMOUNT);
+  const claimBPA = options?.claimBPA ?? true;
+  const claimSpouse = options?.claimSpouseAmount ?? false;
+
+  const federalCredits: number[] = [];
+  if (claimBPA) federalCredits.push(FEDERAL_BASIC_PERSONAL_AMOUNT);
+  if (claimSpouse) federalCredits.push(FEDERAL_SPOUSE_AMOUNT);
+
+  const bcCredits: number[] = [];
+  if (claimBPA) bcCredits.push(BC_BASIC_PERSONAL_AMOUNT);
+  if (claimSpouse) bcCredits.push(BC_SPOUSE_AMOUNT);
+
+  const federal = calcBracketTax(annualGrossCAD, FEDERAL_BRACKETS_2026, federalCredits);
+  const provincial = calcBracketTax(annualGrossCAD, BC_BRACKETS_2026, bcCredits);
   const cpp = calcCPP(annualGrossCAD);
   const cpp2 = calcCPP2(annualGrossCAD);
   const ei = calcEI(annualGrossCAD);

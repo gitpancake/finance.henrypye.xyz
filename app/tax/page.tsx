@@ -4,9 +4,17 @@ import { useState, useMemo } from "react";
 import { useFinance } from "@/contexts/FinanceContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { calculateTax } from "@/lib/tax";
+import type { TaxOptions } from "@/lib/tax";
 import { formatMoney, formatPercent } from "@/lib/format";
 import type { Currency } from "@/lib/types";
-import { CURRENCIES } from "@/lib/constants";
+import {
+  CURRENCIES,
+  FEDERAL_BASIC_PERSONAL_AMOUNT,
+  BC_BASIC_PERSONAL_AMOUNT,
+  FEDERAL_SPOUSE_AMOUNT,
+  BC_SPOUSE_AMOUNT,
+} from "@/lib/constants";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +41,8 @@ export default function TaxPage() {
   const [income, setIncome] = useState(0);
   const [incomeCurrency, setIncomeCurrency] = useState<Currency>("CAD");
   const [prefilled, setPrefilled] = useState(false);
+  const [claimBPA, setClaimBPA] = useState(true);
+  const [claimSpouseAmount, setClaimSpouseAmount] = useState(false);
 
   if (budgetIncome && !prefilled && income === 0) {
     setIncome(budgetIncome.amount);
@@ -45,7 +55,14 @@ export default function TaxPage() {
     [income, incomeCurrency, convert]
   );
 
-  const tax = useMemo(() => calculateTax(annualGrossCAD), [annualGrossCAD]);
+  const taxOptions: TaxOptions = useMemo(
+    () => ({ claimBPA, claimSpouseAmount }),
+    [claimBPA, claimSpouseAmount]
+  );
+  const tax = useMemo(
+    () => calculateTax(annualGrossCAD, taxOptions),
+    [annualGrossCAD, taxOptions]
+  );
 
   return (
     <div>
@@ -82,6 +99,39 @@ export default function TaxPage() {
         {prefilled && (
           <div className="text-xs text-muted-foreground mt-1.5">Pre-filled from your budget</div>
         )}
+      </div>
+
+      {/* Tax Credits */}
+      <div className="mb-8 max-w-md space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Non-Refundable Tax Credits
+        </p>
+        <div className="flex items-start gap-2">
+          <Checkbox
+            id="bpa"
+            checked={claimBPA}
+            onCheckedChange={(v) => setClaimBPA(v === true)}
+          />
+          <label htmlFor="bpa" className="text-sm leading-tight cursor-pointer">
+            Basic Personal Amount
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Federal: ${FEDERAL_BASIC_PERSONAL_AMOUNT.toLocaleString()} &middot; BC: ${BC_BASIC_PERSONAL_AMOUNT.toLocaleString()}
+            </span>
+          </label>
+        </div>
+        <div className="flex items-start gap-2">
+          <Checkbox
+            id="spouse"
+            checked={claimSpouseAmount}
+            onCheckedChange={(v) => setClaimSpouseAmount(v === true)}
+          />
+          <label htmlFor="spouse" className="text-sm leading-tight cursor-pointer">
+            Spouse / Common-Law Partner Amount
+            <span className="block text-xs text-muted-foreground mt-0.5">
+              Federal: ${FEDERAL_SPOUSE_AMOUNT.toLocaleString()} &middot; BC: ${BC_SPOUSE_AMOUNT.toLocaleString()} (assumes partner has $0 income)
+            </span>
+          </label>
+        </div>
       </div>
 
       {annualGrossCAD > 0 && (

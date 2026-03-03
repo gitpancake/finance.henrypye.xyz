@@ -31,6 +31,11 @@ export const BC_BRACKETS_2026 = [
 
 export const BC_BASIC_PERSONAL_AMOUNT = 12_580;
 
+// Spouse / common-law partner amount (line 30300 federal, line 58120 BC)
+// Full credit when spouse has $0 net income; reduced dollar-for-dollar by spouse's income.
+export const FEDERAL_SPOUSE_AMOUNT = 16_129;
+export const BC_SPOUSE_AMOUNT = 12_580;
+
 export const CPP_2026 = {
   rate: 0.0595,
   maxPensionableEarnings: 71_300,
