@@ -8,6 +8,24 @@ import EditableTable, { type Column, type UserOption } from "@/components/Editab
 import ReceiptUpload from "@/components/ReceiptUpload";
 import { formatMoney } from "@/lib/format";
 import type { Currency, SharedItem } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const itemColumns: Column[] = [
   { key: "name", label: "Item", type: "text" },
@@ -22,7 +40,7 @@ export default function SharedPage() {
   const { user } = useAuth();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   if (selectedCategoryId) {
     const category = state.categories.find((c) => c.id === selectedCategoryId);
@@ -87,74 +105,71 @@ function CategoryList({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-zinc-900">Shared</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
-        >
+        <h1 className="text-lg font-semibold">Shared</h1>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}>
           {showForm ? "Cancel" : "New Category"}
-        </button>
+        </Button>
       </div>
-      <p className="text-xs text-zinc-400 mb-6">
+      <p className="text-xs text-muted-foreground mb-6">
         Collaborative expense categories. Share with other users for read/write access.
       </p>
 
       {showForm && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 mb-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">Name</label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="e.g. Apartment"
-                autoFocus
-                className="w-full rounded-md border border-zinc-200 px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">Description</label>
-              <input
-                type="text"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Optional"
-                className="w-full rounded-md border border-zinc-200 px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1">Currency</label>
-              <div className="flex gap-2">
-                <select
-                  value={newCurrency}
-                  onChange={(e) => setNewCurrency(e.target.value as Currency)}
-                  className="flex-1 rounded-md border border-zinc-200 px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
-                >
-                  <option value="CAD">CAD</option>
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
-                </select>
-                <button
-                  onClick={handleCreate}
-                  disabled={!newName.trim()}
-                  className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
-                >
-                  Create
-                </button>
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Name</Label>
+                <Input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Apartment"
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Description</Label>
+                <Input
+                  type="text"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Optional"
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Currency</Label>
+                <div className="flex gap-2">
+                  <select
+                    value={newCurrency}
+                    onChange={(e) => setNewCurrency(e.target.value as Currency)}
+                    className="flex-1 rounded-md border border-input px-2.5 py-1.5 text-sm outline-none focus:border-ring"
+                  >
+                    <option value="CAD">CAD</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={!newName.trim()}
+                    size="sm"
+                  >
+                    Create
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {state.categories.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-200 p-8 text-center">
-          <p className="text-sm text-zinc-400">No shared categories yet.</p>
-          <p className="text-xs text-zinc-300 mt-1">Create one to start tracking expenses together.</p>
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">No shared categories yet.</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Create one to start tracking expenses together.</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -164,32 +179,32 @@ function CategoryList({ onSelect }: { onSelect: (id: string) => void }) {
               <button
                 key={cat.id}
                 onClick={() => onSelect(cat.id)}
-                className="group rounded-lg border border-zinc-200 bg-white p-4 text-left hover:border-zinc-300 transition-colors"
+                className="group rounded-lg border border-border bg-card p-4 text-left hover:border-foreground/20 transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-900">{cat.name}</span>
+                      <span className="text-sm font-semibold">{cat.name}</span>
                       {!isOwner && (
-                        <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">
+                        <Badge variant="secondary" className="text-[10px]">
                           shared by {cat.ownerName}
-                        </span>
+                        </Badge>
                       )}
                       {cat.members.length > 0 && isOwner && (
-                        <span className="text-[10px] bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded">
+                        <Badge variant="secondary" className="text-[10px] bg-blue-50 text-blue-500">
                           shared with {cat.members.length}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     {cat.description && (
-                      <p className="text-xs text-zinc-400 mt-0.5">{cat.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{cat.description}</p>
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="font-mono text-sm font-semibold text-zinc-900">
+                    <div className="font-mono text-sm font-semibold">
                       {formatMoney(cat.totalSpent, cat.currency)}
                     </div>
-                    <div className="text-xs text-zinc-400">
+                    <div className="text-xs text-muted-foreground">
                       {cat.itemCount} item{cat.itemCount !== 1 && "s"}
                     </div>
                   </div>
@@ -211,7 +226,6 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
   const { displayCurrency, convert } = useCurrency();
   const [platformUsers, setPlatformUsers] = useState<UserOption[]>([]);
   const [selectedUser, setSelectedUser] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const category = state.categories.find((c) => c.id === categoryId);
   const items = state.itemsByCategory[categoryId] ?? [];
@@ -331,23 +345,23 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
     <div>
       <button
         onClick={onBack}
-        className="mb-4 text-xs text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer"
+        className="mb-4 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
       >
         &larr; Back to categories
       </button>
 
       <div className="flex items-start justify-between mb-1">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-900">{category.name}</h1>
+          <h1 className="text-lg font-semibold">{category.name}</h1>
           {category.description && (
-            <p className="text-xs text-zinc-400">{category.description}</p>
+            <p className="text-xs text-muted-foreground">{category.description}</p>
           )}
         </div>
         <div className="text-right">
-          <div className="font-mono text-lg font-semibold text-zinc-900">
+          <div className="font-mono text-lg font-semibold">
             {formatMoney(totalInDisplay, displayCurrency)}
           </div>
-          <div className="text-xs text-zinc-400">
+          <div className="text-xs text-muted-foreground">
             {items.length} item{items.length !== 1 && "s"}
           </div>
         </div>
@@ -355,55 +369,58 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
 
       {/* Sharing controls (owner only) */}
       {isOwner && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 mb-4 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Sharing
-          </div>
-          {category.members.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {category.members.map((m) => (
-                <span
-                  key={m.userId}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600"
-                >
-                  {m.username}
-                  <button
-                    onClick={() => handleRemoveMember(m.userId)}
-                    className="text-zinc-400 hover:text-red-500 cursor-pointer"
+        <Card className="mb-4 mt-4">
+          <CardContent className="p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Sharing
+            </div>
+            {category.members.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {category.members.map((m) => (
+                  <Badge
+                    key={m.userId}
+                    variant="secondary"
+                    className="gap-1.5"
                   >
-                    &times;
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          {availableUsers.length > 0 && (
-            <div className="flex gap-2">
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="flex-1 rounded-md border border-zinc-200 px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
-              >
-                <option value="">Add a user...</option>
-                {availableUsers.map((u) => (
-                  <option key={u.value} value={u.value}>
-                    {u.label}
-                  </option>
+                    {m.username}
+                    <button
+                      onClick={() => handleRemoveMember(m.userId)}
+                      className="text-muted-foreground hover:text-destructive cursor-pointer"
+                    >
+                      &times;
+                    </button>
+                  </Badge>
                 ))}
-              </select>
-              <button
-                onClick={handleAddMember}
-                disabled={!selectedUser}
-                className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40"
-              >
-                Share
-              </button>
-            </div>
-          )}
-          {availableUsers.length === 0 && category.members.length === 0 && (
-            <p className="text-xs text-zinc-400">No other users to share with.</p>
-          )}
-        </div>
+              </div>
+            )}
+            {availableUsers.length > 0 && (
+              <div className="flex gap-2">
+                <select
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="flex-1 rounded-md border border-input px-2.5 py-1.5 text-sm outline-none focus:border-ring"
+                >
+                  <option value="">Add a user...</option>
+                  {availableUsers.map((u) => (
+                    <option key={u.value} value={u.value}>
+                      {u.label}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  onClick={handleAddMember}
+                  disabled={!selectedUser}
+                  size="sm"
+                >
+                  Share
+                </Button>
+              </div>
+            )}
+            {availableUsers.length === 0 && category.members.length === 0 && (
+              <p className="text-xs text-muted-foreground">No other users to share with.</p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Receipt upload */}
@@ -429,31 +446,31 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
 
       {/* Delete category (owner only) */}
       {isOwner && (
-        <div className="mt-8 pt-4 border-t border-zinc-100">
-          {confirmDelete ? (
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-red-500">Delete this category and all its items?</span>
-              <button
-                onClick={handleDeleteCategory}
-                className="rounded-md bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600"
-              >
-                Yes, delete
+        <div className="mt-8 pt-4 border-t border-border">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button className="text-xs text-muted-foreground hover:text-destructive cursor-pointer transition-colors">
+                Delete category
               </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="text-xs text-zinc-400 hover:text-red-500 cursor-pointer transition-colors"
-            >
-              Delete category
-            </button>
-          )}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete category</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Delete &ldquo;{category.name}&rdquo; and all its items? This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteCategory}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>

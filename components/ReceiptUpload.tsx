@@ -2,6 +2,18 @@
 
 import { useState, useRef } from "react";
 import type { Currency } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface ExtractedItem {
   name: string;
@@ -96,101 +108,100 @@ export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrenc
   return (
     <div>
       <div className="flex items-center gap-3">
-        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          {loading ? "Processing..." : "Upload Receipt"}
-        </label>
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        <Button variant="outline" size="sm" asChild>
+          <label className="cursor-pointer">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            {loading ? "Processing..." : "Upload Receipt"}
+          </label>
+        </Button>
+        {error && <span className="text-xs text-destructive">{error}</span>}
       </div>
 
       {showPreview && extractedItems.length > 0 && (
-        <div className="mt-3 rounded-lg border border-zinc-200 bg-white p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-700">
-              Extracted Items ({selectedCount}/{extractedItems.length} selected)
-            </span>
-            <span className="font-mono text-xs text-zinc-500">
-              Total: {defaultCurrency} {selectedTotal.toFixed(2)}
-            </span>
-          </div>
-
-          <table className="sheet w-full">
-            <thead>
-              <tr>
-                <th className="w-8"></th>
-                <th className="text-left">Item</th>
-                <th className="text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {extractedItems.map((item, i) => (
-                <tr
-                  key={i}
-                  className={`cursor-pointer ${!item.selected ? "opacity-40" : ""}`}
-                  onClick={() => toggleItem(i)}
-                >
-                  <td className="text-center">
-                    <input
-                      type="checkbox"
-                      checked={item.selected}
-                      onChange={() => toggleItem(i)}
-                      className="accent-zinc-900"
-                    />
-                  </td>
-                  <td className="text-sm">{item.name}</td>
-                  <td className="text-right font-mono text-sm">{item.amount.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Grouped add */}
-          <div className="mt-3 rounded-md border border-dashed border-zinc-200 bg-zinc-50 p-3">
-            <div className="text-xs font-medium text-zinc-500 mb-2">Add as single line item</div>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={groupedName}
-                onChange={(e) => setGroupedName(e.target.value)}
-                placeholder="Description"
-                className="flex-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400"
-                onKeyDown={(e) => e.key === "Enter" && handleAddAsGrouped()}
-              />
-              <span className="font-mono text-sm text-zinc-500 whitespace-nowrap">
-                {defaultCurrency} {selectedTotal.toFixed(2)}
+        <Card className="mt-3">
+          <CardContent className="p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">
+                Extracted Items ({selectedCount}/{extractedItems.length} selected)
               </span>
-              <button
-                onClick={handleAddAsGrouped}
-                disabled={selectedCount === 0 || !groupedName.trim()}
-                className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40 whitespace-nowrap"
-              >
-                Add Grouped
-              </button>
+              <span className="font-mono text-xs text-muted-foreground">
+                Total: {defaultCurrency} {selectedTotal.toFixed(2)}
+              </span>
             </div>
-          </div>
 
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={handleAddIndividual}
-              disabled={selectedCount === 0}
-              className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 disabled:opacity-40"
-            >
-              Add as {selectedCount} Separate Item{selectedCount !== 1 ? "s" : ""}
-            </button>
-            <button
-              onClick={reset}
-              className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8 text-xs uppercase tracking-wide text-muted-foreground font-medium"></TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Item</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {extractedItems.map((item, i) => (
+                  <TableRow
+                    key={i}
+                    className={`cursor-pointer ${!item.selected ? "opacity-40" : ""}`}
+                    onClick={() => toggleItem(i)}
+                  >
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={item.selected}
+                        onCheckedChange={() => toggleItem(i)}
+                      />
+                    </TableCell>
+                    <TableCell className="text-sm">{item.name}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{item.amount.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="mt-3 rounded-md border border-dashed p-3 bg-muted">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Add as single line item</div>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="text"
+                  value={groupedName}
+                  onChange={(e) => setGroupedName(e.target.value)}
+                  placeholder="Description"
+                  className="flex-1 h-8"
+                  onKeyDown={(e) => e.key === "Enter" && handleAddAsGrouped()}
+                />
+                <span className="font-mono text-sm text-muted-foreground whitespace-nowrap">
+                  {defaultCurrency} {selectedTotal.toFixed(2)}
+                </span>
+                <Button
+                  onClick={handleAddAsGrouped}
+                  disabled={selectedCount === 0 || !groupedName.trim()}
+                  size="sm"
+                >
+                  Add Grouped
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddIndividual}
+                disabled={selectedCount === 0}
+              >
+                Add as {selectedCount} Separate Item{selectedCount !== 1 ? "s" : ""}
+              </Button>
+              <Button variant="outline" size="sm" onClick={reset}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

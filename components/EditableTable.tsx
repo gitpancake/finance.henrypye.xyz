@@ -18,6 +18,15 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Currency } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 export interface Column {
   key: string;
@@ -48,6 +57,15 @@ interface EditableTableProps {
   rowActions?: (row: Row) => React.ReactNode;
 }
 
+// Shared inline input classes
+const inlineInput =
+  "w-full bg-transparent outline-none py-1 text-sm border-0 border-b border-input focus:border-foreground transition-colors";
+const inlineNumber = `${inlineInput} text-right font-mono`;
+const inlineSelect =
+  "bg-transparent outline-none py-1 text-sm border-0 border-b border-input cursor-pointer";
+const thClass =
+  "text-xs uppercase tracking-wide text-muted-foreground font-medium";
+
 function InlineRow({
   columns,
   data,
@@ -77,19 +95,16 @@ function InlineRow({
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
-  // Sync values from parent when data changes (optimistic updates)
   useEffect(() => {
     if (!isNew) setValues(data);
   }, [data, isNew]);
 
-  // Focus first input on new row
   useEffect(() => {
     if (isNew && firstInputRef.current) {
       firstInputRef.current.focus();
     }
   }, [isNew]);
 
-  // Cleanup timers
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -107,7 +122,6 @@ function InlineRow({
     [onSave]
   );
 
-  // --- New row handlers (explicit save) ---
   const handleExplicitSave = () => {
     onSave(values);
     if (isNew) setValues(data);
@@ -126,14 +140,12 @@ function InlineRow({
     if (e.key === "Escape") handleCancel();
   };
 
-  // --- Existing row: immediate save for selects/checkboxes ---
   const handleImmediateChange = (key: string, value: unknown) => {
     const newValues = { ...valuesRef.current, [key]: value };
     setValues(newValues);
     triggerSave(newValues);
   };
 
-  // --- Existing row: debounced save for text/number ---
   const handleDebouncedChange = (key: string, value: unknown) => {
     const newValues = { ...valuesRef.current, [key]: value };
     setValues(newValues);
@@ -155,10 +167,13 @@ function InlineRow({
   // ========== NEW ROW ==========
   if (isNew) {
     return (
-      <tr className="border-t border-dashed border-zinc-300">
-        {dragHandle && <td />}
+      <TableRow className="border-t border-dashed">
+        {dragHandle && <TableCell />}
         {columns.map((col, i) => (
-          <td key={col.key} className={col.type === "number" ? "num" : ""}>
+          <TableCell
+            key={col.key}
+            className={col.type === "number" ? "text-right font-mono" : ""}
+          >
             {col.type === "checkbox" ? (
               <input
                 type="checkbox"
@@ -175,6 +190,7 @@ function InlineRow({
                   setValues({ ...values, [col.key]: e.target.value })
                 }
                 onKeyDown={handleNewRowKeyDown}
+                className={inlineSelect}
               >
                 {(col.options ?? CURRENCIES).map((opt) => (
                   <option key={opt} value={opt}>
@@ -189,6 +205,7 @@ function InlineRow({
                   setValues({ ...values, [col.key]: e.target.value || null })
                 }
                 onKeyDown={handleNewRowKeyDown}
+                className={inlineSelect}
               >
                 <option value="">— none —</option>
                 {(usersData ?? []).map((u) => (
@@ -220,36 +237,46 @@ function InlineRow({
                 onKeyDown={handleNewRowKeyDown}
                 placeholder={col.label}
                 step={col.type === "number" ? "0.01" : undefined}
+                className={col.type === "number" ? inlineNumber : inlineInput}
               />
             )}
-          </td>
+          </TableCell>
         ))}
-        <td className="w-20">
+        <TableCell className="w-20">
           <div className="flex gap-1">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleExplicitSave}
-              className="text-xs font-medium text-zinc-900 hover:text-green-600"
+              className="h-auto px-1.5 py-0.5 text-xs font-medium"
             >
               Save
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCancel}
-              className="text-xs text-zinc-400 hover:text-zinc-900"
+              className="h-auto px-1.5 py-0.5 text-xs text-muted-foreground"
             >
               Cancel
-            </button>
+            </Button>
           </div>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     );
   }
 
   // ========== EXISTING ROW (always editable, auto-save) ==========
   return (
-    <tr className="group">
-      {dragHandle && <td className="w-6 !px-0">{dragHandle}</td>}
+    <TableRow className="group">
+      {dragHandle && (
+        <TableCell className="w-6 !px-0">{dragHandle}</TableCell>
+      )}
       {columns.map((col) => (
-        <td key={col.key} className={col.type === "number" ? "num" : ""}>
+        <TableCell
+          key={col.key}
+          className={col.type === "number" ? "text-right font-mono" : ""}
+        >
           {col.type === "checkbox" ? (
             <input
               type="checkbox"
@@ -265,6 +292,7 @@ function InlineRow({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.value)
               }
+              className={inlineSelect}
             >
               {(col.options ?? CURRENCIES).map((opt) => (
                 <option key={opt} value={opt}>
@@ -278,6 +306,7 @@ function InlineRow({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.value || null)
               }
+              className={inlineSelect}
             >
               <option value="">— none —</option>
               {(usersData ?? []).map((u) => (
@@ -293,6 +322,7 @@ function InlineRow({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.value)
               }
+              className={inlineInput}
             />
           ) : (
             <input
@@ -315,11 +345,12 @@ function InlineRow({
               onBlur={handleBlur}
               placeholder={col.label}
               step={col.type === "number" ? "0.01" : undefined}
+              className={col.type === "number" ? inlineNumber : inlineInput}
             />
           )}
-        </td>
+        </TableCell>
       ))}
-      <td className="w-20">
+      <TableCell className="w-20">
         <div className="flex gap-1 items-center">
           <span
             className={`text-xs text-green-500 transition-opacity duration-300 ${
@@ -332,14 +363,14 @@ function InlineRow({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-500 lg:opacity-40 lg:group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="text-xs text-destructive/60 hover:text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity cursor-pointer"
             >
               Del
             </button>
           )}
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -375,7 +406,7 @@ function SortableRow({
 
   const dragHandle = (
     <button
-      className="cursor-grab active:cursor-grabbing text-zinc-300 hover:text-zinc-500 touch-none"
+      className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground touch-none"
       {...attributes}
       {...listeners}
     >
@@ -391,8 +422,8 @@ function SortableRow({
   );
 
   return (
-    <tr ref={setNodeRef} style={style}>
-      <td className="w-6 !px-0 !py-0">
+    <tr ref={setNodeRef} style={style} className="group border-b transition-colors hover:bg-muted/50">
+      <td className="w-6 p-0">
         <div className="flex items-center justify-center h-full">
           {dragHandle}
         </div>
@@ -409,7 +440,6 @@ function SortableRow({
   );
 }
 
-// Extracted cell rendering for sortable rows (renders <td> elements directly, no wrapping <tr>)
 function InlineRowCells({
   columns,
   data,
@@ -479,7 +509,12 @@ function InlineRowCells({
   return (
     <>
       {columns.map((col) => (
-        <td key={col.key} className={col.type === "number" ? "num" : ""}>
+        <td
+          key={col.key}
+          className={`p-2 align-middle whitespace-nowrap ${
+            col.type === "number" ? "text-right font-mono" : ""
+          }`}
+        >
           {col.type === "checkbox" ? (
             <input
               type="checkbox"
@@ -495,6 +530,7 @@ function InlineRowCells({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.value)
               }
+              className={inlineSelect}
             >
               {(col.options ?? CURRENCIES).map((opt) => (
                 <option key={opt} value={opt}>
@@ -508,6 +544,7 @@ function InlineRowCells({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.value || null)
               }
+              className={inlineSelect}
             >
               <option value="">— none —</option>
               {(usersData ?? []).map((u) => (
@@ -523,6 +560,7 @@ function InlineRowCells({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.value)
               }
+              className={inlineInput}
             />
           ) : (
             <input
@@ -545,11 +583,12 @@ function InlineRowCells({
               onBlur={handleBlur}
               placeholder={col.label}
               step={col.type === "number" ? "0.01" : undefined}
+              className={col.type === "number" ? inlineNumber : inlineInput}
             />
           )}
         </td>
       ))}
-      <td className="w-20">
+      <td className="w-20 p-2 align-middle">
         <div className="flex gap-1 items-center">
           <span
             className={`text-xs text-green-500 transition-opacity duration-300 ${
@@ -562,7 +601,7 @@ function InlineRowCells({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-500 lg:opacity-40 lg:group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="text-xs text-destructive/60 hover:text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity cursor-pointer"
             >
               Del
             </button>
@@ -600,7 +639,8 @@ export default function EditableTable({
     if (!(col.key in defaults)) {
       if (col.type === "number") defaults[col.key] = "";
       else if (col.type === "checkbox") defaults[col.key] = false;
-      else if (col.type === "select") defaults[col.key] = col.options?.[0] ?? "CAD";
+      else if (col.type === "select")
+        defaults[col.key] = col.options?.[0] ?? "CAD";
       else if (col.type === "user-select") defaults[col.key] = null;
       else if (col.type === "date") defaults[col.key] = "";
       else defaults[col.key] = "";
@@ -625,19 +665,23 @@ export default function EditableTable({
   const colSpanTotal = columns.length + 1 + (hasDrag ? 1 : 0);
 
   const tableContent = (
-    <table className="sheet">
-      <thead>
-        <tr>
-          {hasDrag && <th style={{ width: "24px" }}></th>}
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {hasDrag && <TableHead style={{ width: "24px" }} />}
           {columns.map((col) => (
-            <th key={col.key} style={col.width ? { width: col.width } : undefined}>
+            <TableHead
+              key={col.key}
+              className={thClass}
+              style={col.width ? { width: col.width } : undefined}
+            >
               {col.label}
-            </th>
+            </TableHead>
           ))}
-          <th style={{ width: "80px" }}></th>
-        </tr>
-      </thead>
-      <tbody>
+          <TableHead className={thClass} style={{ width: "80px" }} />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {hasDrag ? (
           <SortableContext
             items={rows.map((r) => r.id)}
@@ -683,51 +727,51 @@ export default function EditableTable({
           />
         )}
         {rows.length === 0 && !showAdd && (
-          <tr>
-            <td
+          <TableRow>
+            <TableCell
               colSpan={colSpanTotal}
-              className="text-center text-sm text-zinc-400 py-8"
+              className="text-center text-sm text-muted-foreground py-8"
             >
               No entries yet.{" "}
               <button
                 onClick={() => setShowAdd(true)}
-                className="text-zinc-600 hover:text-zinc-900 underline"
+                className="text-foreground/60 hover:text-foreground underline"
               >
                 Add one
               </button>
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         )}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-semibold text-zinc-700">{title}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
         {!showAdd && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowAdd(true)}
-            className="text-xs font-medium text-zinc-400 hover:text-zinc-900"
+            className="h-auto px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             + Add
-          </button>
+          </Button>
         )}
       </div>
-      <div className="overflow-x-auto">
-        {hasDrag ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            {tableContent}
-          </DndContext>
-        ) : (
-          tableContent
-        )}
-      </div>
+      {hasDrag ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          {tableContent}
+        </DndContext>
+      ) : (
+        tableContent
+      )}
     </div>
   );
 }

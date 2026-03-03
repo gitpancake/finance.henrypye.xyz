@@ -6,6 +6,9 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column, type UserOption } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, FamilyOwed } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const columns: Column[] = [
   { key: "person", label: "Person", type: "text" },
@@ -34,7 +37,7 @@ export default function FamilyOwedPage() {
       .catch(() => {});
   }, []);
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const items = state.familyOwed;
 
@@ -51,7 +54,6 @@ export default function FamilyOwedPage() {
     0
   );
 
-  // Group by person
   const byPerson = new Map<string, FamilyOwed[]>();
   for (const o of items) {
     const key = o.person || "Unknown";
@@ -94,8 +96,8 @@ export default function FamilyOwedPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-1">Family Owed</h1>
-      <p className="text-xs text-zinc-400 mb-6">
+      <h1 className="text-lg font-semibold mb-1">Family Owed</h1>
+      <p className="text-xs text-muted-foreground mb-6">
         Money owed to you by family/partner. Link to a platform user to show it in their Family Debts.
       </p>
 
@@ -112,56 +114,59 @@ export default function FamilyOwedPage() {
       />
 
       {items.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Summary
-          </div>
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div>
-              <div className="text-xs text-zinc-500">Total Owed ({displayCurrency})</div>
-              <div className="font-mono text-sm font-semibold text-zinc-900">
-                {formatMoney(totalOwed, displayCurrency)}
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Summary
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Total Owed ({displayCurrency})</div>
+                <div className="font-mono text-sm font-semibold">
+                  {formatMoney(totalOwed, displayCurrency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Total Paid ({displayCurrency})</div>
+                <div className="font-mono text-sm text-positive">
+                  {formatMoney(totalPaid, displayCurrency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Remaining ({displayCurrency})</div>
+                <div className="font-mono text-sm font-semibold text-negative">
+                  {formatMoney(totalRemaining, displayCurrency)}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-zinc-500">Total Paid ({displayCurrency})</div>
-              <div className="font-mono text-sm text-positive">
-                {formatMoney(totalPaid, displayCurrency)}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-zinc-500">Remaining ({displayCurrency})</div>
-              <div className="font-mono text-sm font-semibold text-negative">
-                {formatMoney(totalRemaining, displayCurrency)}
-              </div>
-            </div>
-          </div>
 
-          {byPerson.size > 0 && (
-            <>
-              <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3 mt-4 border-t border-zinc-100 pt-3">
-                By Person
-              </div>
-              <div className="grid grid-cols-4 gap-4">
-                {Array.from(byPerson.entries()).map(([person, debts]) => {
-                  const remaining = debts.reduce(
-                    (sum, o) => sum + convert(o.amount - o.paid, o.currency),
-                    0
-                  );
-                  return (
-                    <div key={person}>
-                      <div className="text-xs text-zinc-500">{person}</div>
-                      <div className="font-mono text-sm text-zinc-700">
-                        {formatMoney(remaining, displayCurrency)}
-                        <span className="text-zinc-400 text-xs ml-1">remaining</span>
+            {byPerson.size > 0 && (
+              <>
+                <Separator className="my-4" />
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                  By Person
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  {Array.from(byPerson.entries()).map(([person, debts]) => {
+                    const remaining = debts.reduce(
+                      (sum, o) => sum + convert(o.amount - o.paid, o.currency),
+                      0
+                    );
+                    return (
+                      <div key={person}>
+                        <div className="text-xs text-muted-foreground">{person}</div>
+                        <div className="font-mono text-sm">
+                          {formatMoney(remaining, displayCurrency)}
+                          <span className="text-muted-foreground text-xs ml-1">remaining</span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

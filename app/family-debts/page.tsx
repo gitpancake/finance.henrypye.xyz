@@ -5,6 +5,18 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, FamilyDebt } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 const columns: Column[] = [
   { key: "familyMember", label: "Family Member", type: "text" },
@@ -18,12 +30,11 @@ export default function FamilyDebtsPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const manualDebts = state.familyDebts.filter((d) => !d.linkedOwedId);
   const linkedDebts = state.familyDebts.filter((d) => !!d.linkedOwedId);
 
-  // Group all debts by family member for summary
   const byMember = new Map<string, FamilyDebt[]>();
   for (const d of state.familyDebts) {
     const key = d.familyMember || "Unknown";
@@ -80,8 +91,8 @@ export default function FamilyDebtsPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-1">Family Debts</h1>
-      <p className="text-xs text-zinc-400 mb-6">
+      <h1 className="text-lg font-semibold mb-1">Family Debts</h1>
+      <p className="text-xs text-muted-foreground mb-6">
         Track money lent by family members. Not included in your total debt calculations.
       </p>
 
@@ -99,105 +110,106 @@ export default function FamilyDebtsPage() {
       {linkedDebts.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-sm font-semibold text-zinc-700">Linked Debts</h2>
-            <span className="text-xs bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-mono">
+            <h2 className="text-sm font-semibold text-muted-foreground">Linked Debts</h2>
+            <Badge variant="secondary" className="font-mono text-xs">
               read-only
-            </span>
+            </Badge>
           </div>
-          <div className="overflow-x-auto">
-          <table className="sheet">
-            <thead>
-              <tr>
-                <th>Creditor</th>
-                <th>Description</th>
-                <th style={{ textAlign: "right" }}>Amount</th>
-                <th style={{ textAlign: "right" }}>Paid</th>
-                <th style={{ textAlign: "right" }}>Remaining</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Creditor</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Description</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Amount</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Paid</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Remaining</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {linkedDebts.map((d) => (
-                <tr key={d.id}>
-                  <td>{d.familyMember}</td>
-                  <td>{d.description}</td>
-                  <td className="num">{formatMoney(d.amount, d.currency)}</td>
-                  <td className="num">{formatMoney(d.paid ?? 0, d.currency)}</td>
-                  <td className="num">{formatMoney(d.amount - (d.paid ?? 0), d.currency)}</td>
-                  <td>
+                <TableRow key={d.id}>
+                  <TableCell>{d.familyMember}</TableCell>
+                  <TableCell>{d.description}</TableCell>
+                  <TableCell className="text-right font-mono">{formatMoney(d.amount, d.currency)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatMoney(d.paid ?? 0, d.currency)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatMoney(d.amount - (d.paid ?? 0), d.currency)}</TableCell>
+                  <TableCell>
                     {d.paidOff ? (
-                      <span className="text-xs text-green-600 font-medium">Paid off</span>
+                      <Badge variant="secondary" className="text-green-600 text-xs">Paid off</Badge>
                     ) : (
-                      <span className="text-xs text-amber-600 font-medium">Outstanding</span>
+                      <Badge variant="secondary" className="text-amber-600 text-xs">Outstanding</Badge>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-          </div>
+            </TableBody>
+          </Table>
         </div>
       )}
 
       {state.familyDebts.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Summary by Family Member
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            {totalByMember.map(({ member, total }) => (
-              <div key={member}>
-                <div className="text-xs text-zinc-500">{member}</div>
-                <div className="font-mono text-sm text-zinc-700">
-                  {formatMoney(total, displayCurrency)}
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Summary by Family Member
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              {totalByMember.map(({ member, total }) => (
+                <div key={member}>
+                  <div className="text-xs text-muted-foreground">{member}</div>
+                  <div className="font-mono text-sm">
+                    {formatMoney(total, displayCurrency)}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <div>
-              <div className="text-xs text-zinc-500">Total ({displayCurrency})</div>
-              <div className="font-mono text-sm font-semibold text-zinc-900">
-                {formatMoney(totalInDisplay, displayCurrency)}
+              ))}
+              <div>
+                <div className="text-xs text-muted-foreground">Total ({displayCurrency})</div>
+                <div className="font-mono text-sm font-semibold">
+                  {formatMoney(totalInDisplay, displayCurrency)}
+                </div>
               </div>
             </div>
-          </div>
 
-          {linkedDebts.length > 0 && (
-            <>
-              <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3 mt-4 border-t border-zinc-100 pt-3">
-                Linked Debts
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="text-xs text-zinc-500">Total Owed</div>
-                  <div className="font-mono text-sm font-semibold text-zinc-900">
-                    {formatMoney(linkedTotal, displayCurrency)}
+            {linkedDebts.length > 0 && (
+              <>
+                <Separator className="my-4" />
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                  Linked Debts
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Total Owed</div>
+                    <div className="font-mono text-sm font-semibold">
+                      {formatMoney(linkedTotal, displayCurrency)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {linkedDebts.length} linked debt{linkedDebts.length !== 1 && "s"}
+                    </div>
                   </div>
-                  <div className="text-xs text-zinc-400 mt-0.5">
-                    {linkedDebts.length} linked debt{linkedDebts.length !== 1 && "s"}
+                  <div>
+                    <div className="text-xs text-muted-foreground">Outstanding</div>
+                    <div className="font-mono text-sm font-semibold text-negative">
+                      {formatMoney(linkedOutstanding, displayCurrency)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {linkedDebts.filter((d) => !d.paidOff).length} not paid off
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Paid Off</div>
+                    <div className="font-mono text-sm font-semibold text-emerald-600">
+                      {formatMoney(linkedTotal - linkedOutstanding, displayCurrency)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {linkedDebts.filter((d) => d.paidOff).length} settled
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div className="text-xs text-zinc-500">Outstanding</div>
-                  <div className="font-mono text-sm font-semibold text-negative">
-                    {formatMoney(linkedOutstanding, displayCurrency)}
-                  </div>
-                  <div className="text-xs text-zinc-400 mt-0.5">
-                    {linkedDebts.filter((d) => !d.paidOff).length} not paid off
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-zinc-500">Paid Off</div>
-                  <div className="font-mono text-sm font-semibold text-emerald-600">
-                    {formatMoney(linkedTotal - linkedOutstanding, displayCurrency)}
-                  </div>
-                  <div className="text-xs text-zinc-400 mt-0.5">
-                    {linkedDebts.filter((d) => d.paidOff).length} settled
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

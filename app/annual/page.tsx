@@ -7,6 +7,9 @@ import EditableTable, { type Column, type UserOption } from "@/components/Editab
 import { formatMoney } from "@/lib/format";
 import type { Currency, AnnualSubscription } from "@/lib/types";
 import { yearlyAmount } from "@/lib/subscriptions";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const columns: Column[] = [
   { key: "label", label: "Subscription", type: "text" },
@@ -26,7 +29,7 @@ export default function AnnualPage() {
     ...state.walletAddresses.map((w) => ({ value: w.id, label: `${w.label || w.address.slice(0, 8)} (${w.chain})` })),
   ];
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const subs = state.annualSubscriptions;
 
@@ -86,7 +89,7 @@ export default function AnnualPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Annual Subscriptions</h1>
+      <h1 className="text-lg font-semibold mb-6">Annual Subscriptions</h1>
 
       <EditableTable
         title="Subscriptions & Renewals"
@@ -101,66 +104,69 @@ export default function AnnualPage() {
       />
 
       {subs.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Summary
-          </div>
-          <div className="grid grid-cols-4 gap-6">
-            <div>
-              <div className="text-xs text-zinc-500">Per Year</div>
-              <div className="font-mono text-lg font-semibold text-negative">
-                {formatMoney(totals.perYear, displayCurrency)}
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Summary
+            </div>
+            <div className="grid grid-cols-4 gap-6">
+              <div>
+                <div className="text-xs text-muted-foreground">Per Year</div>
+                <div className="font-mono text-lg font-semibold text-negative">
+                  {formatMoney(totals.perYear, displayCurrency)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {subs.length} subscription{subs.length !== 1 && "s"}
+                </div>
               </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                {subs.length} subscription{subs.length !== 1 && "s"}
+              <div>
+                <div className="text-xs text-muted-foreground">Per Month (avg)</div>
+                <div className="font-mono text-lg font-semibold text-negative">
+                  {formatMoney(totals.perMonth, displayCurrency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Per Day</div>
+                <div className="font-mono text-lg font-semibold">
+                  {formatMoney(totals.perDay, displayCurrency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Due This Month</div>
+                <div className="font-mono text-lg font-semibold text-negative">
+                  {formatMoney(dueThisMonthTotal, displayCurrency)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {dueThisMonth.length} renewal{dueThisMonth.length !== 1 && "s"}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-zinc-500">Per Month (avg)</div>
-              <div className="font-mono text-lg font-semibold text-negative">
-                {formatMoney(totals.perMonth, displayCurrency)}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-zinc-500">Per Day</div>
-              <div className="font-mono text-lg font-semibold text-zinc-700">
-                {formatMoney(totals.perDay, displayCurrency)}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-zinc-500">Due This Month</div>
-              <div className="font-mono text-lg font-semibold text-negative">
-                {formatMoney(dueThisMonthTotal, displayCurrency)}
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                {dueThisMonth.length} renewal{dueThisMonth.length !== 1 && "s"}
-              </div>
-            </div>
-          </div>
 
-          {dueThisMonth.length > 0 && (
-            <>
-              <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3 mt-4 border-t border-zinc-100 pt-3">
-                Renewals This Month
-              </div>
-              <div className="space-y-1.5">
-                {dueThisMonth.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-700">{s.label}</span>
-                      <span className="text-xs text-zinc-400">
-                        {new Date(s.nextRenewal).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
+            {dueThisMonth.length > 0 && (
+              <>
+                <Separator className="my-4" />
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                  Renewals This Month
+                </div>
+                <div className="space-y-1.5">
+                  {dueThisMonth.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span>{s.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(s.nextRenewal).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
+                      <span className="font-mono text-negative">
+                        {formatMoney(s.amount, s.currency)}
                       </span>
                     </div>
-                    <span className="font-mono text-negative">
-                      {formatMoney(s.amount, s.currency)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

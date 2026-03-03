@@ -6,6 +6,17 @@ import { FinanceProvider } from "@/contexts/FinanceContext";
 import { SharedProvider } from "@/contexts/SharedContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import Shell from "./Shell";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserInfo {
   userId: string;
@@ -14,7 +25,9 @@ interface UserInfo {
 }
 
 export default function AuthGate({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<"loading" | "locked" | "unlocked">("loading");
+  const [status, setStatus] = useState<"loading" | "locked" | "unlocked">(
+    "loading"
+  );
   const [user, setUser] = useState<UserInfo | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +39,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       .then((r) => r.json())
       .then((d) => {
         if (d.authenticated) {
-          setUser({ userId: d.userId, username: d.username, isAdmin: d.isAdmin });
+          setUser({
+            userId: d.userId,
+            username: d.username,
+            isAdmin: d.isAdmin,
+          });
           setStatus("unlocked");
         } else {
           setStatus("locked");
@@ -49,7 +66,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
       if (res.ok) {
         const d = await res.json();
-        setUser({ userId: d.userId, username: d.username, isAdmin: d.isAdmin });
+        setUser({
+          userId: d.userId,
+          username: d.username,
+          isAdmin: d.isAdmin,
+        });
         setStatus("unlocked");
       } else {
         setError("Invalid credentials");
@@ -64,8 +85,8 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
   if (status === "loading") {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-zinc-50">
-        <div className="text-sm text-zinc-400 animate-pulse">Loading...</div>
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <Skeleton className="h-4 w-24" />
       </div>
     );
   }
@@ -85,56 +106,55 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-zinc-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="w-full max-w-sm">
-        <div className="rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <h1 className="font-mono text-sm font-bold text-zinc-900 tracking-tight mb-1">
-            finance.
-          </h1>
-          <p className="text-xs text-zinc-400 mb-8">
-            Sign in to access your dashboard
-          </p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-mono text-sm font-bold tracking-tight">
+              finance.
+            </CardTitle>
+            <CardDescription>
+              Sign in to access your dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoFocus
+                  autoComplete="username"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                autoComplete="username"
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-zinc-400 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:border-zinc-400 transition-colors"
-              />
-            </div>
+              {error && (
+                <p className="text-xs text-destructive">{error}</p>
+              )}
 
-            {error && (
-              <p className="text-xs text-red-500">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting || !username || !password}
-              className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            >
-              {submitting ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-        </div>
+              <Button
+                type="submit"
+                disabled={submitting || !username || !password}
+                className="w-full"
+              >
+                {submitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

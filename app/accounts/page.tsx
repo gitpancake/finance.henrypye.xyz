@@ -5,6 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Account } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const bankColumns: Column[] = [
   { key: "name", label: "Account Name", type: "text" },
@@ -25,7 +26,7 @@ export default function AccountsPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const banks = state.accounts.filter((a) => a.type === "bank");
   const cards = state.accounts.filter((a) => a.type === "credit_card");
@@ -83,7 +84,7 @@ export default function AccountsPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Accounts</h1>
+      <h1 className="text-lg font-semibold mb-6">Accounts</h1>
 
       <EditableTable
         title="Bank Accounts"
@@ -97,7 +98,7 @@ export default function AccountsPage() {
       />
 
       {banks.length > 0 && (
-        <div className="mb-8 text-right text-sm font-mono text-zinc-600">
+        <div className="mb-8 text-right text-sm font-mono text-muted-foreground">
           Total: {formatMoney(totalBank, displayCurrency)}
         </div>
       )}

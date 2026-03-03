@@ -3,25 +3,27 @@
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { CURRENCIES } from "@/lib/constants";
 import type { Currency } from "@/lib/types";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function CurrencyToggle() {
   const { displayCurrency, setDisplayCurrency } = useCurrency();
 
   return (
-    <div className="flex gap-0.5 rounded-md border border-zinc-200 bg-white p-0.5">
+    <ToggleGroup
+      type="single"
+      value={displayCurrency}
+      onValueChange={(v) => v && setDisplayCurrency(v as Currency)}
+      className="gap-0.5"
+    >
       {CURRENCIES.map((c: Currency) => (
-        <button
+        <ToggleGroupItem
           key={c}
-          onClick={() => setDisplayCurrency(c)}
-          className={`rounded px-2.5 py-1 text-xs font-mono font-medium transition-colors ${
-            displayCurrency === c
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-          }`}
+          value={c}
+          className="font-mono text-xs px-2.5 py-1 h-auto data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
         >
           {c}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }

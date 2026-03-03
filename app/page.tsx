@@ -10,7 +10,17 @@ import CurrencyBadge from "@/components/CurrencyBadge";
 import { formatMoney, formatCrypto } from "@/lib/format";
 import { yearlyAmount } from "@/lib/subscriptions";
 import { loadNFTPortfolio } from "@/lib/storage";
-import type { Currency, NFTPortfolio, CollectionOffer } from "@/lib/types";
+import type { NFTPortfolio, CollectionOffer } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 function calculateTopNOfferValue(offers: CollectionOffer[], nftsHeld: number): number {
   let remaining = nftsHeld;
@@ -123,7 +133,7 @@ export default function Dashboard() {
   }, [state, rates, convert, convertCrypto, nftCache]);
 
   if (!isLoaded) {
-    return <div className="text-sm text-zinc-400">Loading...</div>;
+    return <Skeleton className="h-6 w-48" />;
   }
 
   const netDebt = Math.max(0, summary.debts - summary.pendingIncoming);
@@ -138,7 +148,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Dashboard</h1>
+      <h1 className="text-lg font-semibold mb-6">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard label="Net Worth" value={netWorth} currency={displayCurrency} />
@@ -157,133 +167,134 @@ export default function Dashboard() {
       />
 
       {summary.annualCosts > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Annual Costs Breakdown
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <div>
-              <Link href="/budget" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">Recurring x 12</Link>
-              <div className="font-mono text-sm font-semibold text-zinc-900">
-                {formatMoney(summary.monthlyExpenses * 12, displayCurrency)}
-              </div>
-              <div className="text-xs text-zinc-400">{formatMoney(summary.monthlyExpenses, displayCurrency)}/mo</div>
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Annual Costs Breakdown
             </div>
-            {summary.oneOffExpenses > 0 && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               <div>
-                <Link href="/budget" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">One-off Expenses</Link>
-                <div className="font-mono text-sm font-semibold text-zinc-900">
-                  {formatMoney(summary.oneOffExpenses, displayCurrency)}
+                <Link href="/budget" className="text-xs text-muted-foreground hover:text-foreground hover:underline">Recurring x 12</Link>
+                <div className="font-mono text-sm font-semibold">
+                  {formatMoney(summary.monthlyExpenses * 12, displayCurrency)}
                 </div>
-                <div className="text-xs text-zinc-400">not annualized</div>
+                <div className="text-xs text-muted-foreground">{formatMoney(summary.monthlyExpenses, displayCurrency)}/mo</div>
               </div>
-            )}
-            {summary.monthlyRent > 0 && (
+              {summary.oneOffExpenses > 0 && (
+                <div>
+                  <Link href="/budget" className="text-xs text-muted-foreground hover:text-foreground hover:underline">One-off Expenses</Link>
+                  <div className="font-mono text-sm font-semibold">
+                    {formatMoney(summary.oneOffExpenses, displayCurrency)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">not annualized</div>
+                </div>
+              )}
+              {summary.monthlyRent > 0 && (
+                <div>
+                  <Link href="/budget" className="text-xs text-muted-foreground hover:text-foreground hover:underline">Rent</Link>
+                  <div className="font-mono text-sm font-semibold">
+                    {formatMoney(summary.monthlyRent * 12, displayCurrency)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{formatMoney(summary.monthlyRent, displayCurrency)}/mo</div>
+                </div>
+              )}
               <div>
-                <Link href="/budget" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">Rent</Link>
-                <div className="font-mono text-sm font-semibold text-zinc-900">
-                  {formatMoney(summary.monthlyRent * 12, displayCurrency)}
+                <Link href="/annual" className="text-xs text-muted-foreground hover:text-foreground hover:underline">Annual Subscriptions</Link>
+                <div className="font-mono text-sm font-semibold">
+                  {formatMoney(summary.annualSubCosts, displayCurrency)}
                 </div>
-                <div className="text-xs text-zinc-400">{formatMoney(summary.monthlyRent, displayCurrency)}/mo</div>
+                <div className="text-xs text-muted-foreground">{state.annualSubscriptions.length} subscriptions</div>
               </div>
-            )}
-            <div>
-              <Link href="/annual" className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline">Annual Subscriptions</Link>
-              <div className="font-mono text-sm font-semibold text-zinc-900">
-                {formatMoney(summary.annualSubCosts, displayCurrency)}
+              <div>
+                <div className="text-xs text-muted-foreground">Total Annual</div>
+                <div className="font-mono text-sm font-semibold text-negative">
+                  {formatMoney(summary.annualCosts, displayCurrency)}
+                </div>
+                <div className="text-xs text-muted-foreground">{formatMoney(summary.annualCosts / 12, displayCurrency)}/mo avg</div>
               </div>
-              <div className="text-xs text-zinc-400">{state.annualSubscriptions.length} subscriptions</div>
             </div>
-            <div>
-              <div className="text-xs text-zinc-500">Total Annual</div>
-              <div className="font-mono text-sm font-semibold text-negative">
-                {formatMoney(summary.annualCosts, displayCurrency)}
-              </div>
-              <div className="text-xs text-zinc-400">{formatMoney(summary.annualCosts / 12, displayCurrency)}/mo avg</div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {hasData && (
         <div className="mt-6">
-          <h2 className="text-sm font-semibold text-zinc-700 mb-2">Breakdown</h2>
-          <div className="overflow-x-auto">
-          <table className="sheet">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Type</th>
-                <th>Currency</th>
-                <th style={{ textAlign: "right" }}>Native Amount</th>
-                <th style={{ textAlign: "right" }}>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2">Breakdown</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Item</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Type</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Currency</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Native Amount</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">
                   In {displayCurrency}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {state.accounts.map((a) => (
-                <tr key={a.id}>
-                  <td>{a.name}</td>
-                  <td>
-                    <span className="text-xs text-zinc-500">
+                <TableRow key={a.id}>
+                  <TableCell>{a.name}</TableCell>
+                  <TableCell>
+                    <span className="text-xs text-muted-foreground">
                       {a.type === "bank" ? "Bank" : "Credit Card"}
                     </span>
-                  </td>
-                  <td><CurrencyBadge currency={a.currency} /></td>
-                  <td className="num">
+                  </TableCell>
+                  <TableCell><CurrencyBadge currency={a.currency} /></TableCell>
+                  <TableCell className="text-right font-mono">
                     {formatMoney(
                       a.type === "credit_card" ? -Math.abs(a.balance) : a.balance,
                       a.currency
                     )}
-                  </td>
-                  <td className="num">
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
                     {formatMoney(
                       a.type === "credit_card"
                         ? -convert(Math.abs(a.balance), a.currency)
                         : convert(a.balance, a.currency),
                       displayCurrency
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {state.debts.filter((d) => !d.paidOff).map((d) => (
-                <tr key={d.id}>
-                  <td>{d.creditor}</td>
-                  <td>
-                    <span className="text-xs text-zinc-500">Debt</span>
-                  </td>
-                  <td><CurrencyBadge currency={d.currency} /></td>
-                  <td className="num">
+                <TableRow key={d.id}>
+                  <TableCell>{d.creditor}</TableCell>
+                  <TableCell>
+                    <span className="text-xs text-muted-foreground">Debt</span>
+                  </TableCell>
+                  <TableCell><CurrencyBadge currency={d.currency} /></TableCell>
+                  <TableCell className="text-right font-mono">
                     {formatMoney(-d.amount, d.currency)}
-                  </td>
-                  <td className="num">
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
                     {formatMoney(
                       -convert(d.amount, d.currency),
                       displayCurrency
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {state.incomings
                 .filter((i) => i.status === "pending")
                 .map((i) => (
-                  <tr key={i.id}>
-                    <td>{i.source}</td>
-                    <td>
+                  <TableRow key={i.id}>
+                    <TableCell>{i.source}</TableCell>
+                    <TableCell>
                       <span className="text-xs text-amber-600">Pending Incoming</span>
-                    </td>
-                    <td><CurrencyBadge currency={i.currency} /></td>
-                    <td className="num">
+                    </TableCell>
+                    <TableCell><CurrencyBadge currency={i.currency} /></TableCell>
+                    <TableCell className="text-right font-mono">
                       {formatMoney(i.amount, i.currency)}
-                    </td>
-                    <td className="num">
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
                       {formatMoney(
                         convert(i.amount, i.currency),
                         displayCurrency
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
               {rates &&
                 state.crypto.map((c) => {
@@ -291,55 +302,54 @@ export default function Dashboard() {
                     ? convert(c.amount, "GBP")
                     : convertCrypto(c.amount, c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD);
                   return (
-                    <tr key={c.id}>
-                      <td>{c.asset}</td>
-                      <td>
-                        <span className="text-xs text-zinc-500">Crypto</span>
-                      </td>
-                      <td>
-                        <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-600">
+                    <TableRow key={c.id}>
+                      <TableCell>{c.asset}</TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">Crypto</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
                           {c.asset}
                         </span>
-                      </td>
-                      <td className="num">
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
                         {c.amount.toFixed(c.asset === "ETH" ? 4 : 2)} {c.asset}
-                      </td>
-                      <td className="num">
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
                         {formatMoney(displayValue, displayCurrency)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
               {rates && summary.nftOfferETH > 0 && (
-                <tr key="nfts">
-                  <td>
+                <TableRow key="nfts">
+                  <TableCell>
                     NFTs
-                    <span className="text-xs text-zinc-400 ml-1">({nftCount})</span>
-                  </td>
-                  <td>
+                    <span className="text-xs text-muted-foreground ml-1">({nftCount})</span>
+                  </TableCell>
+                  <TableCell>
                     <span className="text-xs text-amber-600">NFT Offers</span>
-                  </td>
-                  <td>
-                    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-600">
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
                       ETH
                     </span>
-                  </td>
-                  <td className="num">
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
                     {formatCrypto(summary.nftOfferETH)} ETH
-                  </td>
-                  <td className="num">
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
                     {formatMoney(summary.nftOfferValue, displayCurrency)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
-          </div>
+            </TableBody>
+          </Table>
         </div>
       )}
 
       {!hasData && (
-        <div className="mt-8 text-center text-sm text-zinc-400">
+        <div className="mt-8 text-center text-sm text-muted-foreground">
           Add accounts, debts, or crypto holdings to see your financial overview.
         </div>
       )}

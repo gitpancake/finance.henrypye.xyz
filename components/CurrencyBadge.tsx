@@ -1,4 +1,5 @@
 import type { Currency } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 const dotColors: Record<Currency, string> = {
   CAD: "bg-red-500",
@@ -9,9 +10,9 @@ const dotColors: Record<Currency, string> = {
 
 export default function CurrencyBadge({ currency }: { currency: Currency }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-mono text-zinc-600">
-      <span className={`inline-block h-1.5 w-1.5 rounded-full ${dotColors[currency]}`} />
+    <Badge variant="secondary" className="font-mono gap-1">
+      <span className={`inline-block size-1.5 rounded-full ${dotColors[currency]}`} />
       {currency}
-    </span>
+    </Badge>
   );
 }

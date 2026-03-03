@@ -3,6 +3,20 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface User {
   id: string;
@@ -80,95 +94,94 @@ export default function AdminPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-1">Admin</h1>
-      <p className="text-xs text-zinc-400 mb-6">Manage users</p>
+      <h1 className="text-lg font-semibold mb-1">Admin</h1>
+      <p className="text-xs text-muted-foreground mb-6">Manage users</p>
 
       {/* Add user form */}
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 mb-6">
-        <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-          Add User
-        </div>
-        <form onSubmit={handleCreate} className="flex items-end gap-3">
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
-            />
+      <Card className="mb-6">
+        <CardContent className="p-5">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+            Add User
           </div>
-          <div>
-            <label className="block text-xs text-zinc-500 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={creating || !username || !password}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {creating ? "Creating..." : "Create"}
-          </button>
-        </form>
-        {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-      </div>
+          <form onSubmit={handleCreate} className="flex items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-username">Username</Label>
+              <Input
+                id="new-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-password">Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={creating || !username || !password}
+            >
+              {creating ? "Creating..." : "Create"}
+            </Button>
+          </form>
+          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+        </CardContent>
+      </Card>
 
       {/* Users table */}
-      <div className="rounded-lg border border-zinc-200 bg-white">
-        <div className="px-5 pt-4 pb-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+      <Card>
+        <CardContent className="p-5">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
             Users
           </div>
-        </div>
-        {loading ? (
-          <div className="px-5 py-4 text-sm text-zinc-400">Loading...</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-t border-zinc-100">
-                <th className="px-5 py-2 text-left text-xs font-medium text-zinc-400">Username</th>
-                <th className="px-5 py-2 text-left text-xs font-medium text-zinc-400">Role</th>
-                <th className="px-5 py-2 text-left text-xs font-medium text-zinc-400">Created</th>
-                <th className="px-5 py-2 text-right text-xs font-medium text-zinc-400"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-t border-zinc-100">
-                  <td className="px-5 py-3 text-zinc-900">{u.username}</td>
-                  <td className="px-5 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      u.is_admin
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-zinc-100 text-zinc-600"
-                    }`}>
-                      {u.is_admin ? "admin" : "user"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-zinc-500">
-                    {new Date(u.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {u.id !== user.userId && (
-                      <button
-                        onClick={() => handleDelete(u.id, u.username)}
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          {loading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Username</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Role</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Created</TableHead>
+                  <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell>{u.username}</TableCell>
+                    <TableCell>
+                      <Badge variant={u.is_admin ? "default" : "secondary"}>
+                        {u.is_admin ? "admin" : "user"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {u.id !== user.userId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(u.id, u.username)}
+                          className="text-xs text-destructive hover:text-destructive"
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

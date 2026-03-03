@@ -6,6 +6,17 @@ import EditableTable, { type Column } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, Debt } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 const columns: Column[] = [
   { key: "creditor", label: "Creditor", type: "text" },
@@ -18,7 +29,7 @@ export default function DebtsPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const activeDebts = state.debts.filter((d) => !d.paidOff);
   const repaidDebts = state.debts.filter((d) => d.paidOff);
@@ -78,7 +89,7 @@ export default function DebtsPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Debts</h1>
+      <h1 className="text-lg font-semibold mb-6">Debts</h1>
 
       <EditableTable
         title="Money Owed"
@@ -92,7 +103,7 @@ export default function DebtsPage() {
         rowActions={(row) => (
           <button
             onClick={() => handleMarkRepaid(row.id as string)}
-            className="text-xs text-zinc-400 hover:text-green-600 cursor-pointer lg:opacity-30 lg:group-hover:opacity-100 transition-opacity"
+            className="text-xs text-muted-foreground hover:text-green-600 cursor-pointer lg:opacity-30 lg:group-hover:opacity-100 transition-opacity"
           >
             Repaid
           </button>
@@ -100,66 +111,68 @@ export default function DebtsPage() {
       />
 
       {activeDebts.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Summary
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            {CURRENCIES.map(
-              (c) =>
-                totalByC[c] > 0 && (
-                  <div key={c}>
-                    <div className="text-xs text-zinc-500">{c}</div>
-                    <div className="font-mono text-sm text-negative">
-                      {formatMoney(totalByC[c], c)}
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Summary
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              {CURRENCIES.map(
+                (c) =>
+                  totalByC[c] > 0 && (
+                    <div key={c}>
+                      <div className="text-xs text-muted-foreground">{c}</div>
+                      <div className="font-mono text-sm text-negative">
+                        {formatMoney(totalByC[c], c)}
+                      </div>
                     </div>
-                  </div>
-                )
-            )}
-            <div>
-              <div className="text-xs text-zinc-500">Total ({displayCurrency})</div>
-              <div className="font-mono text-sm font-semibold text-negative">
-                {formatMoney(totalInDisplay, displayCurrency)}
+                  )
+              )}
+              <div>
+                <div className="text-xs text-muted-foreground">Total ({displayCurrency})</div>
+                <div className="font-mono text-sm font-semibold text-negative">
+                  {formatMoney(totalInDisplay, displayCurrency)}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {repaidDebts.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-sm font-semibold text-zinc-700 mb-2">Repaid</h2>
-          <div className="overflow-x-auto">
-            <table className="sheet">
-              <thead>
-                <tr>
-                  <th>Creditor</th>
-                  <th style={{ textAlign: "right" }}>Amount</th>
-                  <th>Currency</th>
-                  <th>Notes</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {repaidDebts.map((d) => (
-                  <tr key={d.id} className="opacity-60">
-                    <td className="line-through">{d.creditor}</td>
-                    <td className="num line-through">{formatMoney(d.amount, d.currency)}</td>
-                    <td className="text-xs text-zinc-500">{d.currency}</td>
-                    <td className="text-xs text-zinc-400">{d.notes}</td>
-                    <td>
-                      <button
-                        onClick={() => handleReactivate(d.id)}
-                        className="text-xs text-zinc-400 hover:text-amber-600 cursor-pointer transition-colors"
-                      >
-                        Undo
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-2">Repaid</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Creditor</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Amount</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Currency</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Notes</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {repaidDebts.map((d) => (
+                <TableRow key={d.id} className="opacity-60">
+                  <TableCell className="line-through">{d.creditor}</TableCell>
+                  <TableCell className="text-right font-mono line-through">{formatMoney(d.amount, d.currency)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{d.currency}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{d.notes}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleReactivate(d.id)}
+                      className="h-auto px-1.5 py-0.5 text-xs text-muted-foreground hover:text-amber-600"
+                    >
+                      Undo
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

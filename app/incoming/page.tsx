@@ -5,7 +5,8 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, Incoming, IncomingStatus } from "@/lib/types";
-import { CURRENCIES } from "@/lib/constants";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const columns: Column[] = [
   { key: "source", label: "Source", type: "text" },
@@ -19,7 +20,7 @@ export default function IncomingPage() {
   const { state, dispatch, isLoaded } = useFinance();
   const { displayCurrency, convert } = useCurrency();
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const pending = state.incomings.filter((i) => i.status === "pending");
   const received = state.incomings.filter((i) => i.status === "received");
@@ -62,7 +63,7 @@ export default function IncomingPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Incoming Money</h1>
+      <h1 className="text-lg font-semibold mb-6">Incoming Money</h1>
 
       <EditableTable
         title="Expected & Received"
@@ -76,37 +77,39 @@ export default function IncomingPage() {
       />
 
       {state.incomings.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Summary
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <div className="text-xs text-zinc-500">Pending</div>
-              <div className="font-mono text-lg font-semibold text-amber-600">
-                {formatMoney(totalPending, displayCurrency)}
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Summary
+            </div>
+            <div className="grid grid-cols-3 gap-6">
+              <div>
+                <div className="text-xs text-muted-foreground">Pending</div>
+                <div className="font-mono text-lg font-semibold text-amber-600">
+                  {formatMoney(totalPending, displayCurrency)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {pending.length} item{pending.length !== 1 && "s"}
+                </div>
               </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                {pending.length} item{pending.length !== 1 && "s"}
+              <div>
+                <div className="text-xs text-muted-foreground">Received</div>
+                <div className="font-mono text-lg font-semibold text-positive">
+                  {formatMoney(totalReceived, displayCurrency)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {received.length} item{received.length !== 1 && "s"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Total</div>
+                <div className="font-mono text-lg font-semibold">
+                  {formatMoney(totalPending + totalReceived, displayCurrency)}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-zinc-500">Received</div>
-              <div className="font-mono text-lg font-semibold text-positive">
-                {formatMoney(totalReceived, displayCurrency)}
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                {received.length} item{received.length !== 1 && "s"}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-zinc-500">Total</div>
-              <div className="font-mono text-lg font-semibold text-zinc-700">
-                {formatMoney(totalPending + totalReceived, displayCurrency)}
-              </div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

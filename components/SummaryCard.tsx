@@ -2,6 +2,7 @@
 
 import { formatMoney } from "@/lib/format";
 import type { Currency } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface SummaryCardProps {
   label: string;
@@ -12,19 +13,21 @@ interface SummaryCardProps {
 }
 
 export default function SummaryCard({ label, value, currency, colorOverride, subtitle }: SummaryCardProps) {
-  const color = colorOverride ?? (value > 0 ? "text-positive" : value < 0 ? "text-negative" : "text-zinc-500");
+  const color = colorOverride ?? (value > 0 ? "text-positive" : value < 0 ? "text-negative" : "text-muted-foreground");
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4 min-w-0">
-      <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-        {label}
-      </div>
-      <div className={`mt-1 font-mono text-lg font-semibold truncate lg:text-xl ${color}`} title={formatMoney(value, currency)}>
-        {formatMoney(value, currency)}
-      </div>
-      {subtitle && (
-        <div className="text-xs text-zinc-400 font-mono mt-0.5 truncate">{subtitle}</div>
-      )}
-    </div>
+    <Card className="min-w-0">
+      <CardContent className="px-4 py-4">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
+        <div className={`mt-1 font-mono text-lg font-semibold truncate lg:text-xl ${color}`} title={formatMoney(value, currency)}>
+          {formatMoney(value, currency)}
+        </div>
+        {subtitle && (
+          <div className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{subtitle}</div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

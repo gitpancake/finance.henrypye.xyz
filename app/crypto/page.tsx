@@ -7,6 +7,18 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatMoney, formatCrypto } from "@/lib/format";
 import { loadNFTPortfolio, saveNFTPortfolio, isNFTPortfolioFresh } from "@/lib/storage";
 import type { CryptoHolding, NFTPortfolio, CollectionInfo, CollectionOffer, OfferInfo } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface WalletBalance {
   address: string;
@@ -395,7 +407,7 @@ export default function CryptoPage() {
     }
   }, [isLoaded, state.walletAddresses.length, fetchNFTs, streamCollections, streamNFTOffers]);
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const total = rates
     ? state.crypto.reduce((sum, c) => {
@@ -446,325 +458,343 @@ export default function CryptoPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Crypto Holdings</h1>
+      <h1 className="text-lg font-semibold mb-6">Crypto Holdings</h1>
 
       {/* Wallet Balances */}
-      <div className="rounded-lg border border-zinc-200 bg-white p-5 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-            Wallet Balances
-          </div>
-          {state.walletAddresses.length > 0 && (
-            <button
-              onClick={fetchBalances}
-              disabled={balancesLoading}
-              className="text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded hover:bg-zinc-200 disabled:opacity-50"
-            >
-              {balancesLoading ? "Loading..." : "Refresh"}
-            </button>
-          )}
-        </div>
-
-        {state.walletAddresses.length === 0 ? (
-          <div className="text-sm text-zinc-400 text-center py-4">
-            <p className="mb-2">No wallet addresses configured.</p>
-            <Link href="/settings" className="text-xs text-zinc-600 hover:text-zinc-900 underline">
-              Add wallet addresses in Settings
-            </Link>
-          </div>
-        ) : walletBalances.length === 0 && !balancesLoading ? (
-          <div className="text-sm text-zinc-400 text-center py-4">
-            Click refresh to fetch wallet balances.
-          </div>
-        ) : (
-          <>
-            <table className="sheet">
-              <thead>
-                <tr>
-                  <th>Wallet</th>
-                  <th style={{ textAlign: "right" }}>ETH</th>
-                  <th style={{ textAlign: "right" }}>USDC</th>
-                  <th style={{ textAlign: "right" }}>GBP-E</th>
-                  {rates && (
-                    <th style={{ textAlign: "right" }}>Value ({displayCurrency})</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {walletBalances.map((w) => {
-                  const ethValue = rates ? convertCrypto(w.ethBalance, rates.ETH_USD) : 0;
-                  const usdcValue = rates ? convertCrypto(w.usdcBalance, rates.USDC_USD) : 0;
-                  const gbpeValue = rates ? convert(w.gbpeBalance, "GBP") : 0;
-                  return (
-                    <tr key={w.address}>
-                      <td>
-                        <div className="text-sm font-medium">{w.label}</div>
-                        <div className="text-xs text-zinc-400 font-mono">{w.address.slice(0, 6)}...{w.address.slice(-4)}</div>
-                      </td>
-                      <td className="num">{formatCrypto(w.ethBalance)}</td>
-                      <td className="num">{formatCrypto(w.usdcBalance)}</td>
-                      <td className="num">{w.gbpeBalance.toFixed(2)}</td>
-                      {rates && (
-                        <td className="num">{formatMoney(ethValue + usdcValue + gbpeValue, displayCurrency)}</td>
-                      )}
-                    </tr>
-                  );
-                })}
-                {walletBalances.length > 1 && (
-                  <tr className="font-semibold">
-                    <td>Total</td>
-                    <td className="num">{formatCrypto(totalETH)}</td>
-                    <td className="num">{formatCrypto(totalUSDC)}</td>
-                    <td className="num">{totalGBPE.toFixed(2)}</td>
-                    {rates && (
-                      <td className="num">{formatMoney(total, displayCurrency)}</td>
-                    )}
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            {walletBalances.length <= 1 && rates && total > 0 && (
-              <div className="mt-3 text-right text-sm font-mono text-zinc-600">
-                Total: {formatMoney(total, displayCurrency)}
-              </div>
+      <Card className="mb-4">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Wallet Balances
+            </div>
+            {state.walletAddresses.length > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={fetchBalances}
+                disabled={balancesLoading}
+              >
+                {balancesLoading ? "Loading..." : "Refresh"}
+              </Button>
             )}
-          </>
-        )}
-      </div>
+          </div>
+
+          {state.walletAddresses.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              <p className="mb-2">No wallet addresses configured.</p>
+              <Link href="/settings" className="text-xs hover:underline">
+                Add wallet addresses in Settings
+              </Link>
+            </div>
+          ) : walletBalances.length === 0 && !balancesLoading ? (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              Click refresh to fetch wallet balances.
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Wallet</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">ETH</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">USDC</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">GBP-E</TableHead>
+                    {rates && (
+                      <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Value ({displayCurrency})</TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {walletBalances.map((w) => {
+                    const ethValue = rates ? convertCrypto(w.ethBalance, rates.ETH_USD) : 0;
+                    const usdcValue = rates ? convertCrypto(w.usdcBalance, rates.USDC_USD) : 0;
+                    const gbpeValue = rates ? convert(w.gbpeBalance, "GBP") : 0;
+                    return (
+                      <TableRow key={w.address}>
+                        <TableCell>
+                          <div className="text-sm font-medium">{w.label}</div>
+                          <div className="text-xs text-muted-foreground font-mono">{w.address.slice(0, 6)}...{w.address.slice(-4)}</div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{formatCrypto(w.ethBalance)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCrypto(w.usdcBalance)}</TableCell>
+                        <TableCell className="text-right font-mono">{w.gbpeBalance.toFixed(2)}</TableCell>
+                        {rates && (
+                          <TableCell className="text-right font-mono">{formatMoney(ethValue + usdcValue + gbpeValue, displayCurrency)}</TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                  {walletBalances.length > 1 && (
+                    <TableRow className="font-semibold">
+                      <TableCell>Total</TableCell>
+                      <TableCell className="text-right font-mono">{formatCrypto(totalETH)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCrypto(totalUSDC)}</TableCell>
+                      <TableCell className="text-right font-mono">{totalGBPE.toFixed(2)}</TableCell>
+                      {rates && (
+                        <TableCell className="text-right font-mono">{formatMoney(total, displayCurrency)}</TableCell>
+                      )}
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              {walletBalances.length <= 1 && rates && total > 0 && (
+                <div className="mt-3 text-right text-sm font-mono text-muted-foreground">
+                  Total: {formatMoney(total, displayCurrency)}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* NFT Portfolio Section */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-zinc-700">NFT Portfolio</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">NFT Portfolio</h2>
           {state.walletAddresses.length > 0 && (
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={refreshOffers}
                 disabled={isEnriching || nftLoading}
-                className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded hover:bg-amber-100 disabled:opacity-50"
+                className="text-amber-700 border-amber-200 hover:bg-amber-50"
               >
                 {isEnriching ? "Loading..." : "Refresh Offers"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => fetchNFTs(true)}
                 disabled={nftLoading}
-                className="text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded hover:bg-zinc-200 disabled:opacity-50"
               >
                 {nftLoading ? "Loading..." : "Refresh All"}
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         {state.walletAddresses.length === 0 ? (
-          <div className="rounded-lg border border-zinc-200 bg-white p-5 text-center">
-            <p className="text-sm text-zinc-400 mb-2">
-              No wallet addresses configured.
-            </p>
-            <Link href="/settings" className="text-xs text-zinc-600 hover:text-zinc-900 underline">
-              Add wallet addresses in Settings
-            </Link>
-          </div>
+          <Card>
+            <CardContent className="p-5 text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                No wallet addresses configured.
+              </p>
+              <Link href="/settings" className="text-xs hover:underline">
+                Add wallet addresses in Settings
+              </Link>
+            </CardContent>
+          </Card>
         ) : (
           <>
             {nftError && (
-              <div className="text-xs text-red-500 mb-3">{nftError}</div>
+              <Alert variant="destructive" className="mb-3">
+                <AlertDescription>{nftError}</AlertDescription>
+              </Alert>
             )}
 
             {nftLoading && !nftPortfolio && (
-              <div className="rounded-lg border border-zinc-200 bg-white p-5 text-center">
-                <p className="text-sm text-zinc-400">Fetching NFTs from OpenSea...</p>
-              </div>
+              <Card>
+                <CardContent className="p-5 text-center">
+                  <p className="text-sm text-muted-foreground">Fetching NFTs from OpenSea...</p>
+                </CardContent>
+              </Card>
             )}
 
             {nftPortfolio && nfts.length === 0 && !nftLoading && (
-              <div className="rounded-lg border border-zinc-200 bg-white p-5 text-center">
-                <p className="text-sm text-zinc-400">No NFTs found in your wallets.</p>
-              </div>
+              <Card>
+                <CardContent className="p-5 text-center">
+                  <p className="text-sm text-muted-foreground">No NFTs found in your wallets.</p>
+                </CardContent>
+              </Card>
             )}
 
             {nfts.length > 0 && (
               <>
                 {/* Summary */}
-                <div className="rounded-lg border border-zinc-200 bg-white p-5 mb-4">
-                  <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-                    NFT Summary
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div>
-                      <div className="text-xs text-zinc-500">Total NFTs</div>
-                      <div className="font-mono text-lg font-semibold text-zinc-900">
-                        {nfts.length}
-                      </div>
+                <Card className="mb-4">
+                  <CardContent className="p-5">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                      NFT Summary
                     </div>
-                    <div>
-                      <div className="text-xs text-zinc-500">Floor Value (ETH)</div>
-                      <div className="font-mono text-lg font-semibold text-zinc-900">
-                        {formatCrypto(totalNFTFloorETH)} ETH
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Total NFTs</div>
+                        <div className="font-mono text-lg font-semibold">
+                          {nfts.length}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-zinc-500">Floor Value ({displayCurrency})</div>
-                      <div className="font-mono text-lg font-semibold text-zinc-900">
-                        {formatMoney(totalNFTFloorDisplay, displayCurrency)}
+                      <div>
+                        <div className="text-xs text-muted-foreground">Floor Value (ETH)</div>
+                        <div className="font-mono text-lg font-semibold">
+                          {formatCrypto(totalNFTFloorETH)} ETH
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-zinc-500">Best Offers (ETH)</div>
-                      <div className="font-mono text-lg font-semibold text-amber-600">
-                        {collectionsLoading && totalOffersETH === 0 ? (
-                          <span className="text-zinc-300 font-normal text-base">loading...</span>
-                        ) : (
-                          <>{formatCrypto(totalOffersETH)} ETH</>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Floor Value ({displayCurrency})</div>
+                        <div className="font-mono text-lg font-semibold">
+                          {formatMoney(totalNFTFloorDisplay, displayCurrency)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Best Offers (ETH)</div>
+                        <div className="font-mono text-lg font-semibold text-amber-600">
+                          {collectionsLoading && totalOffersETH === 0 ? (
+                            <span className="text-muted-foreground/40 font-normal text-base">loading...</span>
+                          ) : (
+                            <>{formatCrypto(totalOffersETH)} ETH</>
+                          )}
+                        </div>
+                        {totalOffersDisplay > 0 && rates && (
+                          <div className="font-mono text-xs text-amber-500">
+                            {formatMoney(totalOffersDisplay, displayCurrency)}
+                          </div>
                         )}
                       </div>
-                      {totalOffersDisplay > 0 && rates && (
-                        <div className="font-mono text-xs text-amber-500">
-                          {formatMoney(totalOffersDisplay, displayCurrency)}
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      {nftPortfolio?.lastUpdated && (
+                        <div className="text-xs text-muted-foreground/50">
+                          Last updated: {new Date(nftPortfolio.lastUpdated).toLocaleString()}
+                        </div>
+                      )}
+                      {isEnriching && (
+                        <div className="text-xs text-muted-foreground">
+                          {collectionsLoading
+                            ? `Loading collections... ${collectionsResolved}/${collectionsTotal}`
+                            : `Loading item offers... ${nftOffersProgress.done}/${nftOffersProgress.total}`}
                         </div>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-3">
-                    {nftPortfolio?.lastUpdated && (
-                      <div className="text-xs text-zinc-300">
-                        Last updated: {new Date(nftPortfolio.lastUpdated).toLocaleString()}
-                      </div>
-                    )}
-                    {isEnriching && (
-                      <div className="text-xs text-zinc-400">
-                        {collectionsLoading
-                          ? `Loading collections... ${collectionsResolved}/${collectionsTotal}`
-                          : `Loading item offers... ${nftOffersProgress.done}/${nftOffersProgress.total}`}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* By Collection */}
-                <div className="rounded-lg border border-zinc-200 bg-white p-5">
-                  <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-                    By Collection
-                  </div>
-                  <div className="space-y-4">
-                    {Array.from(nftsByCollection.entries())
-                      .sort((a, b) => {
-                        const offerVal = ([, items]: [string, typeof nfts]) => {
-                          const coll = collections[items[0]?.collection || ""];
-                          const itemBids = items.reduce(
-                            (s, n) => s + (n.bestOffer?.isItemOffer ? n.bestOffer.price : 0), 0
+                <Card>
+                  <CardContent className="p-5">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                      By Collection
+                    </div>
+                    <div className="space-y-4">
+                      {Array.from(nftsByCollection.entries())
+                        .sort((a, b) => {
+                          const offerVal = ([, items]: [string, typeof nfts]) => {
+                            const coll = collections[items[0]?.collection || ""];
+                            const itemBids = items.reduce(
+                              (s, n) => s + (n.bestOffer?.isItemOffer ? n.bestOffer.price : 0), 0
+                            );
+                            const withBids = items.filter((n) => n.bestOffer?.isItemOffer).length;
+                            const rem = items.length - withBids;
+                            const collVal = rem > 0 && coll?.offers
+                              ? calculateTopNOfferValue(coll.offers, rem) : 0;
+                            return itemBids + collVal;
+                          };
+                          const diff = offerVal(b) - offerVal(a);
+                          if (diff !== 0) return diff;
+                          const floorA = a[1].reduce((s, n) => s + (n.floorPrice ?? 0), 0);
+                          const floorB = b[1].reduce((s, n) => s + (n.floorPrice ?? 0), 0);
+                          return floorB - floorA;
+                        })
+                        .map(([slug, items]) => {
+                          const collectionFloor = items[0]?.floorPrice ?? 0;
+                          const collectionName = items[0]?.collectionName || slug;
+                          const hasPrice = collectionFloor > 0;
+                          const collInfo = collections[slug];
+                          const offerCount = collInfo?.offers?.length ?? 0;
+                          const isRefreshingThis = refreshingSlug === slug;
+                          // Item-specific bids for this collection
+                          const itemBidTotal = items.reduce(
+                            (s, nft) => s + (nft.bestOffer?.isItemOffer ? nft.bestOffer.price : 0), 0
                           );
-                          const withBids = items.filter((n) => n.bestOffer?.isItemOffer).length;
-                          const rem = items.length - withBids;
-                          const collVal = rem > 0 && coll?.offers
-                            ? calculateTopNOfferValue(coll.offers, rem) : 0;
-                          return itemBids + collVal;
-                        };
-                        const diff = offerVal(b) - offerVal(a);
-                        if (diff !== 0) return diff;
-                        const floorA = a[1].reduce((s, n) => s + (n.floorPrice ?? 0), 0);
-                        const floorB = b[1].reduce((s, n) => s + (n.floorPrice ?? 0), 0);
-                        return floorB - floorA;
-                      })
-                      .map(([slug, items]) => {
-                        const collectionFloor = items[0]?.floorPrice ?? 0;
-                        const collectionName = items[0]?.collectionName || slug;
-                        const hasPrice = collectionFloor > 0;
-                        const collInfo = collections[slug];
-                        const offerCount = collInfo?.offers?.length ?? 0;
-                        const isRefreshingThis = refreshingSlug === slug;
-                        // Item-specific bids for this collection
-                        const itemBidTotal = items.reduce(
-                          (s, nft) => s + (nft.bestOffer?.isItemOffer ? nft.bestOffer.price : 0), 0
-                        );
-                        const itemsWithBids = items.filter((nft) => nft.bestOffer?.isItemOffer).length;
-                        const remainingCount = items.length - itemsWithBids;
-                        const collOfferTotal = remainingCount > 0 && collInfo?.offers
-                          ? calculateTopNOfferValue(collInfo.offers, remainingCount)
-                          : 0;
-                        const collOfferValue = itemBidTotal + collOfferTotal;
-                        return (
-                          <div key={slug}>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <div className="flex items-center gap-2">
-                                <div className="text-sm font-medium text-zinc-700">
-                                  {collectionName}
-                                  <span className="text-xs text-zinc-400 ml-1.5">
-                                    {items.length} item{items.length !== 1 && "s"}
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={() => refreshCollectionOffers(slug)}
-                                  disabled={isRefreshingThis || isEnriching}
-                                  className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded hover:bg-amber-100 disabled:opacity-50"
-                                  title="Refresh offers for this collection"
-                                >
-                                  {isRefreshingThis ? "..." : "↻"}
-                                </button>
-                              </div>
-                              <div className="text-right">
-                                {hasPrice || collOfferValue > 0 ? (
-                                  <>
-                                    {collOfferValue > 0 && (
-                                      <>
-                                        <div className="font-mono text-sm font-semibold text-amber-600">
-                                          {formatCrypto(collOfferValue)} ETH
-                                        </div>
-                                        {rates && (
-                                          <div className="font-mono text-xs text-amber-500">
-                                            {formatMoney(convertCrypto(collOfferValue, rates.ETH_USD), displayCurrency)}
-                                          </div>
-                                        )}
-                                      </>
-                                    )}
-                                    {hasPrice && (
-                                      <div className="text-xs text-zinc-400">
-                                        Floor: {formatCrypto(collectionFloor)} ETH
-                                        {offerCount > 0 && ` · ${offerCount} offer${offerCount !== 1 ? "s" : ""}`}
-                                      </div>
-                                    )}
-                                  </>
-                                ) : collectionsLoading ? (
-                                  <div className="text-xs text-zinc-300">loading...</div>
-                                ) : null}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {items.map((nft) => (
-                                <div
-                                  key={`${nft.contractAddress}:${nft.identifier}`}
-                                  className="flex items-center gap-2 rounded border border-zinc-100 bg-zinc-50 px-2 py-1.5"
-                                >
-                                  {nft.imageUrl && (
-                                    <img
-                                      src={nft.imageUrl}
-                                      alt={nft.name}
-                                      className="w-8 h-8 rounded object-cover"
-                                    />
-                                  )}
-                                  <div>
-                                    <span className="text-xs text-zinc-600 max-w-[120px] truncate block">
-                                      {nft.name}
+                          const itemsWithBids = items.filter((nft) => nft.bestOffer?.isItemOffer).length;
+                          const remainingCount = items.length - itemsWithBids;
+                          const collOfferTotal = remainingCount > 0 && collInfo?.offers
+                            ? calculateTopNOfferValue(collInfo.offers, remainingCount)
+                            : 0;
+                          const collOfferValue = itemBidTotal + collOfferTotal;
+                          return (
+                            <div key={slug}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-sm font-medium">
+                                    {collectionName}
+                                    <span className="text-xs text-muted-foreground ml-1.5">
+                                      {items.length} item{items.length !== 1 && "s"}
                                     </span>
-                                    {nft.bestOffer && (
-                                      <span className={`text-[10px] font-mono ${
-                                        nft.bestOffer.isItemOffer
-                                          ? "text-green-600 font-semibold"
-                                          : "text-amber-600"
-                                      }`}>
-                                        {nft.bestOffer.isItemOffer ? "BID " : ""}
-                                        {formatCrypto(nft.bestOffer.price)} ETH
-                                      </span>
-                                    )}
                                   </div>
+                                  <button
+                                    onClick={() => refreshCollectionOffers(slug)}
+                                    disabled={isRefreshingThis || isEnriching}
+                                    className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded hover:bg-amber-100 disabled:opacity-50"
+                                    title="Refresh offers for this collection"
+                                  >
+                                    {isRefreshingThis ? "..." : "\u21BB"}
+                                  </button>
                                 </div>
-                              ))}
+                                <div className="text-right">
+                                  {hasPrice || collOfferValue > 0 ? (
+                                    <>
+                                      {collOfferValue > 0 && (
+                                        <>
+                                          <div className="font-mono text-sm font-semibold text-amber-600">
+                                            {formatCrypto(collOfferValue)} ETH
+                                          </div>
+                                          {rates && (
+                                            <div className="font-mono text-xs text-amber-500">
+                                              {formatMoney(convertCrypto(collOfferValue, rates.ETH_USD), displayCurrency)}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                      {hasPrice && (
+                                        <div className="text-xs text-muted-foreground">
+                                          Floor: {formatCrypto(collectionFloor)} ETH
+                                          {offerCount > 0 && ` \u00B7 ${offerCount} offer${offerCount !== 1 ? "s" : ""}`}
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : collectionsLoading ? (
+                                    <div className="text-xs text-muted-foreground/40">loading...</div>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {items.map((nft) => (
+                                  <div
+                                    key={`${nft.contractAddress}:${nft.identifier}`}
+                                    className="flex items-center gap-2 rounded border border-border bg-muted px-2 py-1.5"
+                                  >
+                                    {nft.imageUrl && (
+                                      <img
+                                        src={nft.imageUrl}
+                                        alt={nft.name}
+                                        className="w-8 h-8 rounded object-cover"
+                                      />
+                                    )}
+                                    <div>
+                                      <span className="text-xs text-muted-foreground max-w-[120px] truncate block">
+                                        {nft.name}
+                                      </span>
+                                      {nft.bestOffer && (
+                                        <span className={`text-[10px] font-mono ${
+                                          nft.bestOffer.isItemOffer
+                                            ? "text-green-600 font-semibold"
+                                            : "text-amber-600"
+                                        }`}>
+                                          {nft.bestOffer.isItemOffer ? "BID " : ""}
+                                          {formatCrypto(nft.bestOffer.price)} ETH
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
+                          );
+                        })}
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             )}
           </>

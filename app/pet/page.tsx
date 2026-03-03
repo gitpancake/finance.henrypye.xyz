@@ -6,6 +6,17 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import EditableTable, { type Column, type UserOption } from "@/components/EditableTable";
 import { formatMoney } from "@/lib/format";
 import type { Currency, PetExpense } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 const columns: Column[] = [
   { key: "description", label: "Description", type: "text" },
@@ -32,7 +43,7 @@ export default function PetPage() {
       .catch(() => {});
   }, []);
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   const sorted = state.petExpenses;
 
@@ -78,8 +89,8 @@ export default function PetPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-1">Pet Expenses</h1>
-      <p className="text-xs text-zinc-400 mb-6">
+      <h1 className="text-lg font-semibold mb-1">Pet Expenses</h1>
+      <p className="text-xs text-muted-foreground mb-6">
         Track spending on the doggo. Not included in dashboard totals.
       </p>
 
@@ -98,76 +109,76 @@ export default function PetPage() {
       {sharedExpenses.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-sm font-semibold text-zinc-700">Shared With You</h2>
-            <span className="text-xs bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-mono">
+            <h2 className="text-sm font-semibold text-muted-foreground">Shared With You</h2>
+            <Badge variant="secondary" className="font-mono text-xs">
               view-only
-            </span>
+            </Badge>
           </div>
-          <div className="overflow-x-auto">
-            <table className="sheet">
-              <thead>
-                <tr>
-                  <th>From</th>
-                  <th>Description</th>
-                  <th style={{ textAlign: "right" }}>Amount</th>
-                  <th>Date</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...sharedExpenses]
-                  .sort((a, b) => {
-                    if (!a.date) return 1;
-                    if (!b.date) return -1;
-                    return b.date.localeCompare(a.date);
-                  })
-                  .map((e) => (
-                    <tr key={e.id}>
-                      <td className="text-xs text-zinc-500">{e.ownerName}</td>
-                      <td>{e.description}</td>
-                      <td className="num">{formatMoney(e.amount, e.currency)}</td>
-                      <td className="text-xs text-zinc-500">
-                        {e.date
-                          ? new Date(e.date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
-                          : "—"}
-                      </td>
-                      <td className="text-xs text-zinc-400">{e.notes}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">From</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Description</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium text-right">Amount</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Date</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...sharedExpenses]
+                .sort((a, b) => {
+                  if (!a.date) return 1;
+                  if (!b.date) return -1;
+                  return b.date.localeCompare(a.date);
+                })
+                .map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="text-xs text-muted-foreground">{e.ownerName}</TableCell>
+                    <TableCell>{e.description}</TableCell>
+                    <TableCell className="text-right font-mono">{formatMoney(e.amount, e.currency)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {e.date
+                        ? new Date(e.date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{e.notes}</TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
       {(state.petExpenses.length > 0 || sharedExpenses.length > 0) && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Summary
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <div className="text-xs text-zinc-500">Your Total ({displayCurrency})</div>
-              <div className="font-mono text-sm font-semibold text-zinc-900">
-                {formatMoney(totalInDisplay, displayCurrency)}
-              </div>
-              <div className="text-xs text-zinc-400 mt-0.5">
-                {state.petExpenses.length} expense{state.petExpenses.length !== 1 && "s"}
-              </div>
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Summary
             </div>
-            {sharedExpenses.length > 0 && (
+            <div className="grid grid-cols-4 gap-4">
               <div>
-                <div className="text-xs text-zinc-500">Shared With You ({displayCurrency})</div>
-                <div className="font-mono text-sm text-zinc-700">
-                  {formatMoney(sharedTotal, displayCurrency)}
+                <div className="text-xs text-muted-foreground">Your Total ({displayCurrency})</div>
+                <div className="font-mono text-sm font-semibold">
+                  {formatMoney(totalInDisplay, displayCurrency)}
                 </div>
-                <div className="text-xs text-zinc-400 mt-0.5">
-                  {sharedExpenses.length} expense{sharedExpenses.length !== 1 && "s"}
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {state.petExpenses.length} expense{state.petExpenses.length !== 1 && "s"}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+              {sharedExpenses.length > 0 && (
+                <div>
+                  <div className="text-xs text-muted-foreground">Shared With You ({displayCurrency})</div>
+                  <div className="font-mono text-sm">
+                    {formatMoney(sharedTotal, displayCurrency)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {sharedExpenses.length} expense{sharedExpenses.length !== 1 && "s"}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

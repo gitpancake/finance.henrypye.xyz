@@ -10,6 +10,10 @@ import { calculateTax } from "@/lib/tax";
 import type { Currency, BudgetLineItem } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
 import { yearlyAmount } from "@/lib/subscriptions";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const expenseColumns: Column[] = [
   { key: "label", label: "Item", type: "text" },
@@ -49,13 +53,11 @@ export default function BudgetPage() {
 
   const budget = state.budgets.find((b) => b.month === month);
 
-  // Income is stored as a single line item with label "Annual Income"
   const incomeItem = budget?.lineItems.find((li) => li.category === "income");
   const [incomeInput, setIncomeInput] = useState("");
   const [incomeCurrency, setIncomeCurrency] = useState<Currency>("CAD");
   const [incomeInitialized, setIncomeInitialized] = useState<string | null>(null);
 
-  // Sync local input state when month changes or data loads
   if (incomeInitialized !== month && isLoaded) {
     const existing = state.budgets
       .find((b) => b.month === month)
@@ -78,7 +80,6 @@ export default function BudgetPage() {
       (li) => li.dayOfMonth !== null && li.dayOfMonth > today
     );
 
-    // Group by accountId
     const accountMap = new Map<string | null, { items: BudgetLineItem[]; total: number }>();
     for (const item of items) {
       const key = item.accountId;
@@ -99,7 +100,6 @@ export default function BudgetPage() {
         accountBalance = convert(account.balance, account.currency);
         accountName = account.name;
       } else if (wallet && rates) {
-        // Sum crypto balances for this wallet from state.crypto
         const walletCrypto = state.crypto.reduce((sum, c) => {
           if (c.asset === "GBP-E") return sum + convert(c.amount, "GBP");
           const priceUSD = c.asset === "ETH" ? rates.ETH_USD : rates.USDC_USD;
@@ -126,7 +126,6 @@ export default function BudgetPage() {
 
   const saveIncome = () => {
     if (incomeItem) {
-      // Update existing
       dispatch({
         type: "UPDATE_BUDGET_ITEM",
         payload: {
@@ -140,7 +139,6 @@ export default function BudgetPage() {
         },
       });
     } else if (annualIncome > 0) {
-      // Create new
       dispatch({
         type: "ADD_BUDGET_ITEM",
         payload: {
@@ -250,37 +248,41 @@ export default function BudgetPage() {
     });
   };
 
-  if (!isLoaded) return <div className="text-sm text-zinc-400">Loading...</div>;
+  if (!isLoaded) return <Skeleton className="h-6 w-48" />;
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 mb-6">Monthly Budget</h1>
+      <h1 className="text-lg font-semibold mb-6">Monthly Budget</h1>
 
       {/* Month selector */}
       <div className="flex items-center gap-4 mb-6">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setMonth((m) => shiftMonth(m, -1))}
-          className="text-sm text-zinc-400 hover:text-zinc-900"
+          className="text-muted-foreground"
         >
           &larr; Prev
-        </button>
-        <span className="text-sm font-medium text-zinc-700 w-40 text-center">
+        </Button>
+        <span className="text-sm font-medium w-40 text-center">
           {formatMonth(month)}
         </span>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setMonth((m) => shiftMonth(m, 1))}
-          className="text-sm text-zinc-400 hover:text-zinc-900"
+          className="text-muted-foreground"
         >
           Next &rarr;
-        </button>
+        </Button>
       </div>
 
       {/* Annual Income */}
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-zinc-700 mb-2">Annual Income</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-2">Annual Income</h2>
         <div className="flex items-end gap-3">
           <div className="flex-1 max-w-xs">
-            <input
+            <Input
               type="number"
               value={incomeInput}
               onChange={(e) => setIncomeInput(e.target.value)}
@@ -288,7 +290,7 @@ export default function BudgetPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") saveIncome();
               }}
-              className="w-full rounded border border-zinc-200 px-3 py-2 text-sm font-mono outline-none focus:border-zinc-400"
+              className="font-mono"
               placeholder="0.00"
               step="0.01"
             />
@@ -297,10 +299,9 @@ export default function BudgetPage() {
             value={incomeCurrency}
             onChange={(e) => {
               setIncomeCurrency(e.target.value as Currency);
-              // Save on currency change too
               setTimeout(saveIncome, 0);
             }}
-            className="rounded border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
+            className="rounded-md border border-input px-3 py-2 text-sm outline-none focus:border-ring"
           >
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>
@@ -309,7 +310,7 @@ export default function BudgetPage() {
             ))}
           </select>
           {annualIncome > 0 && (
-            <span className="text-xs text-zinc-400 pb-2">
+            <span className="text-xs text-muted-foreground pb-2">
               {formatMoney(annualIncome / 12, incomeCurrency)}/mo
             </span>
           )}
@@ -334,7 +335,7 @@ export default function BudgetPage() {
           label="Annual Gross"
           value={totals.annualGross}
           currency={displayCurrency}
-          colorOverride="text-zinc-700"
+          colorOverride="text-foreground"
         />
         <SummaryCard
           label="Annual After Tax"
@@ -366,96 +367,95 @@ export default function BudgetPage() {
       </div>
 
       {isCurrentMonth && remaining.items.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-5 mt-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-3">
-            Remaining This Month
-          </div>
-          <div className="text-xs text-zinc-400 mb-3">
-            {remaining.items.length} expense{remaining.items.length !== 1 && "s"} still to come (day {today + 1}–31)
-          </div>
+        <Card className="mt-4">
+          <CardContent className="p-5">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              Remaining This Month
+            </div>
+            <div className="text-xs text-muted-foreground mb-3">
+              {remaining.items.length} expense{remaining.items.length !== 1 && "s"} still to come (day {today + 1}–31)
+            </div>
 
-          {remaining.byAccount.map((group) => {
-            const afterExpenses = group.accountBalance !== null
-              ? group.accountBalance - group.remaining
-              : null;
-            return (
-              <div key={group.accountId ?? "unassigned"} className="mb-5 last:mb-0">
-                <div className="text-sm font-medium text-zinc-700 mb-2">{group.accountName}</div>
+            {remaining.byAccount.map((group) => {
+              const afterExpenses = group.accountBalance !== null
+                ? group.accountBalance - group.remaining
+                : null;
+              return (
+                <div key={group.accountId ?? "unassigned"} className="mb-5 last:mb-0">
+                  <div className="text-sm font-medium mb-2">{group.accountName}</div>
 
-                {group.accountBalance !== null && (
-                  <div className="grid grid-cols-3 gap-4 mb-3 rounded bg-zinc-50 px-3 py-2">
-                    <div>
-                      <div className="text-xs text-zinc-400">Current Balance</div>
-                      <div className="font-mono text-sm font-semibold text-zinc-900">
-                        {formatMoney(group.accountBalance, displayCurrency)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-zinc-400">Still to Come</div>
-                      <div className="font-mono text-sm font-semibold text-zinc-700">
-                        -{formatMoney(group.remaining, displayCurrency)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-zinc-400">After Expenses</div>
-                      <div className={`font-mono text-sm font-semibold ${afterExpenses !== null && afterExpenses < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                        {formatMoney(afterExpenses ?? 0, displayCurrency)}
-                      </div>
-                      {afterExpenses !== null && afterExpenses < 0 && (
-                        <div className="text-xs font-medium text-red-600 mt-0.5">
-                          Top up {formatMoney(Math.abs(afterExpenses), displayCurrency)}
+                  {group.accountBalance !== null && (
+                    <div className="grid grid-cols-3 gap-4 mb-3 rounded-md bg-muted px-3 py-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Current Balance</div>
+                        <div className="font-mono text-sm font-semibold">
+                          {formatMoney(group.accountBalance, displayCurrency)}
                         </div>
-                      )}
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Still to Come</div>
+                        <div className="font-mono text-sm font-semibold">
+                          -{formatMoney(group.remaining, displayCurrency)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">After Expenses</div>
+                        <div className={`font-mono text-sm font-semibold ${afterExpenses !== null && afterExpenses < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                          {formatMoney(afterExpenses ?? 0, displayCurrency)}
+                        </div>
+                        {afterExpenses !== null && afterExpenses < 0 && (
+                          <div className="text-xs font-medium text-red-600 mt-0.5">
+                            Top up {formatMoney(Math.abs(afterExpenses), displayCurrency)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div className="space-y-1">
-                  {group.items
-                    .sort((a, b) => (a.dayOfMonth ?? 0) - (b.dayOfMonth ?? 0))
-                    .map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-zinc-700">{item.label}</span>
-                          <span className="text-xs text-zinc-400">
-                            Day {item.dayOfMonth}
+                  <div className="space-y-1">
+                    {group.items
+                      .sort((a, b) => (a.dayOfMonth ?? 0) - (b.dayOfMonth ?? 0))
+                      .map((item) => (
+                        <div key={item.id} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <span>{item.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Day {item.dayOfMonth}
+                            </span>
+                          </div>
+                          <span className="font-mono">
+                            {formatMoney(convert(item.amount, item.currency), displayCurrency)}
                           </span>
                         </div>
-                        <span className="font-mono text-zinc-700">
-                          {formatMoney(convert(item.amount, item.currency), displayCurrency)}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-
-                {group.accountBalance !== null && (
-                  <div className="mt-2 h-1.5 rounded-full bg-zinc-100 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        afterExpenses !== null && afterExpenses < 0
-                          ? "bg-red-400"
-                          : "bg-emerald-400"
-                      }`}
-                      style={{
-                        width: `${Math.min(100, (group.remaining / group.accountBalance) * 100)}%`,
-                      }}
-                    />
+                      ))}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+
+                  {group.accountBalance !== null && (
+                    <div className="mt-2 h-1.5 rounded-full bg-secondary overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          afterExpenses !== null && afterExpenses < 0
+                            ? "bg-red-400"
+                            : "bg-emerald-400"
+                        }`}
+                        style={{
+                          width: `${Math.min(100, (group.remaining / group.accountBalance) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
       )}
 
       {budget && budget.lineItems.length > 0 && (
         <div className="mt-4 flex justify-end">
-          <button
-            onClick={handleCopyToNext}
-            className="text-xs font-medium text-zinc-400 hover:text-zinc-900 border border-zinc-200 rounded px-3 py-1.5"
-          >
+          <Button variant="outline" size="sm" onClick={handleCopyToNext}>
             Copy to {formatMonth(shiftMonth(month, 1))}
-          </button>
+          </Button>
         </div>
       )}
     </div>
