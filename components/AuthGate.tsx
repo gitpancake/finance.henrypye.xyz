@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { getFirebaseAuth } from "@/lib/firebase";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
 import { SharedProvider } from "@/contexts/SharedContext";
@@ -29,7 +31,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     "loading"
   );
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -58,10 +60,13 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     setSubmitting(true);
 
     try {
+      const cred = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+      const idToken = await cred.user.getIdToken();
+
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ idToken }),
       });
 
       if (res.ok) {
@@ -73,11 +78,13 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         });
         setStatus("unlocked");
       } else {
-        setError("Invalid credentials");
+        const d = await res.json();
+        setError(d.error || "User not found in system");
         setPassword("");
       }
     } catch {
-      setError("Something went wrong");
+      setError("Invalid credentials");
+      setPassword("");
     } finally {
       setSubmitting(false);
     }
@@ -120,14 +127,14 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   autoFocus
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
               <div className="space-y-2">
@@ -147,7 +154,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
               <Button
                 type="submit"
-                disabled={submitting || !username || !password}
+                disabled={submitting || !email || !password}
                 className="w-full"
               >
                 {submitting ? "Signing in..." : "Sign in"}

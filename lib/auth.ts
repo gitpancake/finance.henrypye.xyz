@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { adminAuth } from "./firebase-admin";
 
-const SESSION_COOKIE = "finance-auth";
+const SESSION_COOKIE = "firebase-token";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 const supabase = createClient(
@@ -17,23 +18,28 @@ export interface SessionUser {
 
 export async function getSession(): Promise<SessionUser | null> {
   const jar = await cookies();
-  const cookie = jar.get(SESSION_COOKIE);
-  if (!cookie?.value?.startsWith("user:")) return null;
+  const token = jar.get(SESSION_COOKIE)?.value;
+  if (!token) return null;
 
-  const userId = cookie.value.slice(5); // strip "user:" prefix
-  const { data, error } = await supabase
-    .from("finance_users")
-    .select("id, username, is_admin")
-    .eq("id", userId)
-    .single();
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
 
-  if (error || !data) return null;
-  return { id: data.id, username: data.username, isAdmin: data.is_admin };
+    const { data, error } = await supabase
+      .from("finance_users")
+      .select("id, username, is_admin")
+      .eq("firebase_uid", decoded.uid)
+      .single();
+
+    if (error || !data) return null;
+    return { id: data.id, username: data.username, isAdmin: data.is_admin };
+  } catch {
+    return null;
+  }
 }
 
-export async function setSession(userId: string) {
+export async function setSession(idToken: string) {
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, `user:${userId}`, {
+  jar.set(SESSION_COOKIE, idToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

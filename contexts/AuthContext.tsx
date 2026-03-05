@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import { signOut } from "firebase/auth";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 interface AuthUser {
   userId: string;
@@ -24,6 +26,7 @@ export function AuthProvider({
 }) {
   const logout = async () => {
     await fetch("/api/auth", { method: "DELETE" });
+    await signOut(getFirebaseAuth());
     window.location.reload();
   };
 
