@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
@@ -35,6 +35,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth")
@@ -152,6 +153,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
                 <p className="text-xs text-destructive">{error}</p>
               )}
 
+              {resetSent && (
+                <p className="text-xs text-positive">Password reset email sent</p>
+              )}
+
               <Button
                 type="submit"
                 disabled={submitting || !email || !password}
@@ -159,6 +164,27 @@ export default function AuthGate({ children }: { children: ReactNode }) {
               >
                 {submitting ? "Signing in..." : "Sign in"}
               </Button>
+
+              <button
+                type="button"
+                className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={async () => {
+                  if (!email) {
+                    setError("Enter your email first");
+                    return;
+                  }
+                  setError("");
+                  setResetSent(false);
+                  try {
+                    await sendPasswordResetEmail(getFirebaseAuth(), email);
+                    setResetSent(true);
+                  } catch {
+                    setError("Failed to send reset email");
+                  }
+                }}
+              >
+                Forgot password?
+              </button>
             </form>
           </CardContent>
         </Card>
