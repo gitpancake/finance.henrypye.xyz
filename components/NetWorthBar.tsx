@@ -63,11 +63,11 @@ export default function NetWorthBar({ assets, debts, pendingIncoming, currency }
           )}
         </div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="text-green-600">Assets: {formatMoney(assets, currency)} ({formatPercent(assets / debts)})</span>
+          <span className="text-green-600 dark:text-green-400">Assets: {formatMoney(assets, currency)} ({formatPercent(assets / debts)})</span>
           {pendingIncoming > 0 && (
-            <span className="text-amber-600">Pending: {formatMoney(pendingIncoming, currency)} ({formatPercent(pendingIncoming / debts)})</span>
+            <span className="text-amber-600 dark:text-amber-400">Pending: {formatMoney(pendingIncoming, currency)} ({formatPercent(pendingIncoming / debts)})</span>
           )}
-          <span className="text-red-600">
+          <span className="text-red-600 dark:text-red-400">
             {coveredPct >= 100
               ? "Fully covered"
               : `Uncovered: ${formatMoney(debts - assets - pendingIncoming, currency)} (${formatPercent((debts - assets - pendingIncoming) / debts)})`}

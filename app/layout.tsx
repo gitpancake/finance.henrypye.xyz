@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import AuthGate from "@/components/AuthGate";
 import { Toaster } from "@/components/ui/sonner";
@@ -26,13 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthGate>{children}</AuthGate>
-        <Toaster />
-        <Analytics />
+        <ThemeProvider attribute="class" defaultTheme="dark">
+          <AuthGate>{children}</AuthGate>
+          <Toaster />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   );

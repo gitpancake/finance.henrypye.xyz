@@ -136,9 +136,9 @@ export default function FamilyDebtsPage() {
                   <TableCell className="text-right font-mono">{formatMoney(d.amount - (d.paid ?? 0), d.currency)}</TableCell>
                   <TableCell>
                     {d.paidOff ? (
-                      <Badge variant="secondary" className="text-green-600 text-xs">Paid off</Badge>
+                      <Badge variant="secondary" className="text-green-600 dark:text-green-400 text-xs">Paid off</Badge>
                     ) : (
-                      <Badge variant="secondary" className="text-amber-600 text-xs">Outstanding</Badge>
+                      <Badge variant="secondary" className="text-amber-600 dark:text-amber-400 text-xs">Outstanding</Badge>
                     )}
                   </TableCell>
                 </TableRow>

@@ -8,7 +8,8 @@ import { formatMoney, formatCrypto } from "@/lib/format";
 import { loadNFTPortfolio, saveNFTPortfolio, isNFTPortfolioFresh } from "@/lib/storage";
 import type { CryptoHolding, NFTPortfolio, CollectionInfo, CollectionOffer, OfferInfo } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -638,7 +639,7 @@ export default function CryptoPage() {
                       </div>
                       <div>
                         <div className="text-xs text-muted-foreground">Best Offers (ETH)</div>
-                        <div className="font-mono text-lg font-semibold text-amber-600">
+                        <div className="font-mono text-lg font-semibold text-amber-600 dark:text-amber-400">
                           {collectionsLoading && totalOffersETH === 0 ? (
                             <span className="text-muted-foreground/40 font-normal text-base">loading...</span>
                           ) : (
@@ -725,7 +726,7 @@ export default function CryptoPage() {
                                   <button
                                     onClick={() => refreshCollectionOffers(slug)}
                                     disabled={isRefreshingThis || isEnriching}
-                                    className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded hover:bg-amber-100 disabled:opacity-50"
+                                    className="text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded hover:bg-amber-100 dark:hover:bg-amber-500/20 disabled:opacity-50"
                                     title="Refresh offers for this collection"
                                   >
                                     {isRefreshingThis ? "..." : "\u21BB"}
@@ -736,7 +737,7 @@ export default function CryptoPage() {
                                     <>
                                       {collOfferValue > 0 && (
                                         <>
-                                          <div className="font-mono text-sm font-semibold text-amber-600">
+                                          <div className="font-mono text-sm font-semibold text-amber-600 dark:text-amber-400">
                                             {formatCrypto(collOfferValue)} ETH
                                           </div>
                                           {rates && (
@@ -778,8 +779,8 @@ export default function CryptoPage() {
                                       {nft.bestOffer && (
                                         <span className={`text-[10px] font-mono ${
                                           nft.bestOffer.isItemOffer
-                                            ? "text-green-600 font-semibold"
-                                            : "text-amber-600"
+                                            ? "text-green-600 dark:text-green-400 font-semibold"
+                                            : "text-amber-600 dark:text-amber-400"
                                         }`}>
                                           {nft.bestOffer.isItemOffer ? "BID " : ""}
                                           {formatCrypto(nft.bestOffer.price)} ETH

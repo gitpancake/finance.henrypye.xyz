@@ -7,7 +7,8 @@ import { formatMoney } from "@/lib/format";
 import type { Currency, Debt } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -103,7 +104,7 @@ export default function DebtsPage() {
         rowActions={(row) => (
           <button
             onClick={() => handleMarkRepaid(row.id as string)}
-            className="text-xs text-muted-foreground hover:text-green-600 cursor-pointer lg:opacity-30 lg:group-hover:opacity-100 transition-opacity"
+            className="text-xs text-muted-foreground hover:text-green-600 dark:hover:text-green-400 cursor-pointer lg:opacity-30 lg:group-hover:opacity-100 transition-opacity"
           >
             Repaid
           </button>
@@ -164,7 +165,7 @@ export default function DebtsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleReactivate(d.id)}
-                      className="h-auto px-1.5 py-0.5 text-xs text-muted-foreground hover:text-amber-600"
+                      className="h-auto px-1.5 py-0.5 text-xs text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400"
                     >
                       Undo
                     </Button>

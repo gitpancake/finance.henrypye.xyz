@@ -3,7 +3,8 @@
 import { useFinance } from "@/contexts/FinanceContext";
 import type { WalletAddress } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -80,7 +81,7 @@ export default function SettingsPage() {
                   <select
                     value={w.chain}
                     onChange={(e) => handleUpdate(w.id, "chain", e.target.value)}
-                    className="flex-shrink-0 text-sm border border-input rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="flex-shrink-0 text-sm border border-input rounded-md px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                   >
                     <option value="ethereum">Ethereum</option>
                     <option value="gnosis">Gnosis</option>

@@ -26,7 +26,7 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
 
 export interface Column {
   key: string;
@@ -181,7 +181,7 @@ function InlineRow({
                 onChange={(e) =>
                   setValues({ ...values, [col.key]: e.target.checked })
                 }
-                className="accent-zinc-900"
+                className="accent-primary"
               />
             ) : col.type === "select" ? (
               <select
@@ -284,7 +284,7 @@ function InlineRow({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.checked)
               }
-              className="accent-zinc-900"
+              className="accent-primary"
             />
           ) : col.type === "select" ? (
             <select
@@ -522,7 +522,7 @@ function InlineRowCells({
               onChange={(e) =>
                 handleImmediateChange(col.key, e.target.checked)
               }
-              className="accent-zinc-900"
+              className="accent-primary"
             />
           ) : col.type === "select" ? (
             <select

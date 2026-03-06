@@ -11,7 +11,8 @@ import type { Currency, BudgetLineItem } from "@/lib/types";
 import { CURRENCIES } from "@/lib/constants";
 import { yearlyAmount } from "@/lib/subscriptions";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -400,11 +401,11 @@ export default function BudgetPage() {
                       </div>
                       <div>
                         <div className="text-xs text-muted-foreground">After Expenses</div>
-                        <div className={`font-mono text-sm font-semibold ${afterExpenses !== null && afterExpenses < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                        <div className={`font-mono text-sm font-semibold ${afterExpenses !== null && afterExpenses < 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                           {formatMoney(afterExpenses ?? 0, displayCurrency)}
                         </div>
                         {afterExpenses !== null && afterExpenses < 0 && (
-                          <div className="text-xs font-medium text-red-600 mt-0.5">
+                          <div className="text-xs font-medium text-red-600 dark:text-red-400 mt-0.5">
                             Top up {formatMoney(Math.abs(afterExpenses), displayCurrency)}
                           </div>
                         )}

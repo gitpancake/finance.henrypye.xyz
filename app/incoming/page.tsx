@@ -85,7 +85,7 @@ export default function IncomingPage() {
             <div className="grid grid-cols-3 gap-6">
               <div>
                 <div className="text-xs text-muted-foreground">Pending</div>
-                <div className="font-mono text-lg font-semibold text-amber-600">
+                <div className="font-mono text-lg font-semibold text-amber-600 dark:text-amber-400">
                   {formatMoney(totalPending, displayCurrency)}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">

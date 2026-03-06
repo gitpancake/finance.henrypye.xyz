@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserInfo {
@@ -115,7 +116,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
-      <div className="w-full max-w-sm">
+      <Fade className="w-full max-w-sm">
         <Card>
           <CardHeader>
             <CardTitle className="font-mono text-sm font-bold tracking-tight">
@@ -188,7 +189,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             </form>
           </CardContent>
         </Card>
-      </div>
+      </Fade>
     </div>
   );
 }

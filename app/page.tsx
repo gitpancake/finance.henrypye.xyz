@@ -13,6 +13,8 @@ import { loadNFTPortfolio } from "@/lib/storage";
 import type { NFTPortfolio, CollectionOffer } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
+import { Slide } from "@/components/animate-ui/primitives/effects/slide";
 import {
   Table,
   TableHeader,
@@ -150,21 +152,25 @@ export default function Dashboard() {
     <div>
       <h1 className="text-lg font-semibold mb-6">Dashboard</h1>
 
+      <Fade>
       <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard label="Net Worth" value={netWorth} currency={displayCurrency} />
         <SummaryCard label="Total Assets" value={summary.assets} currency={displayCurrency} />
         <SummaryCard label="Total Debts" value={-summary.debts} currency={displayCurrency} />
-        <SummaryCard label="Pending Incoming" value={summary.pendingIncoming} currency={displayCurrency} colorOverride="text-amber-600" />
+        <SummaryCard label="Pending Incoming" value={summary.pendingIncoming} currency={displayCurrency} colorOverride="text-amber-600 dark:text-amber-400" />
         <SummaryCard label="Net Debt" value={-netDebt} currency={displayCurrency} />
         <SummaryCard label="Annual Costs" value={-summary.annualCosts} currency={displayCurrency} />
       </div>
+      </Fade>
 
+      <Slide direction="up" offset={20}>
       <NetWorthBar
         assets={summary.assets}
         debts={summary.debts}
         pendingIncoming={summary.pendingIncoming}
         currency={displayCurrency}
       />
+      </Slide>
 
       {summary.annualCosts > 0 && (
         <Card className="mt-4">
@@ -282,7 +288,7 @@ export default function Dashboard() {
                   <TableRow key={i.id}>
                     <TableCell>{i.source}</TableCell>
                     <TableCell>
-                      <span className="text-xs text-amber-600">Pending Incoming</span>
+                      <span className="text-xs text-amber-600 dark:text-amber-400">Pending Incoming</span>
                     </TableCell>
                     <TableCell><CurrencyBadge currency={i.currency} /></TableCell>
                     <TableCell className="text-right font-mono">
@@ -328,7 +334,7 @@ export default function Dashboard() {
                     <span className="text-xs text-muted-foreground ml-1">({nftCount})</span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs text-amber-600">NFT Offers</span>
+                    <span className="text-xs text-amber-600 dark:text-amber-400">NFT Offers</span>
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">

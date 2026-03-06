@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ThemeTogglerButton } from "@/components/animate-ui/components/buttons/theme-toggler";
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -124,7 +125,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
-          <CurrencyToggle />
+          <div className="flex items-center gap-1">
+            <ThemeTogglerButton variant="ghost" size="sm" modes={["dark", "light"]} />
+            <CurrencyToggle />
+          </div>
         </header>
         <div className="p-4 lg:p-8">{children}</div>
       </SidebarInset>
