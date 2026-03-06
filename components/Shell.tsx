@@ -69,18 +69,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </SidebarMenu>
             </SidebarGroup>
           ))}
-          {user.isAdmin && (
-            <SidebarGroup className="py-0">
-              <SidebarSeparator className="mb-1" />
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/admin")}>
-                    <Link href="/admin">Admin</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-          )}
         </SidebarContent>
         <SidebarFooter>
           {rates && (
