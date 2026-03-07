@@ -86,7 +86,7 @@ function CategoryList({ onSelect }: { onSelect: (id: string) => void }) {
       payload: {
         id,
         ownerId: user.userId,
-        ownerName: user.username,
+        ownerName: user.displayName ?? user.email,
         name: newName.trim(),
         description: newDescription.trim(),
         currency: newCurrency,
@@ -237,7 +237,7 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setPlatformUsers(data.map((u: { id: string; username: string }) => ({ value: u.id, label: u.username })));
+          setPlatformUsers(data.map((u: { id: string; username: string; displayName?: string }) => ({ value: u.id, label: u.displayName ?? u.username })));
         }
       })
       .catch(() => {});
@@ -257,7 +257,7 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
       date: String(row.date || ""),
       notes: String(row.notes || ""),
       addedBy: user.userId,
-      addedByName: user.username,
+      addedByName: user.displayName ?? user.email,
       sortOrder: Math.max(0, ...items.map((i) => i.sortOrder), 0) + 1,
     };
     dispatch({ type: "ADD_ITEM", payload: item });
@@ -287,7 +287,7 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
       date: new Date().toISOString().slice(0, 10),
       notes: "",
       addedBy: user.userId,
-      addedByName: user.username,
+      addedByName: user.displayName ?? user.email,
       sortOrder: Math.max(0, ...items.map((it) => it.sortOrder), 0) + 1 + i,
     }));
     dispatch({ type: "ADD_ITEMS", payload: { categoryId, items: newItems } });
@@ -303,7 +303,7 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
       date: new Date().toISOString().slice(0, 10),
       notes: "",
       addedBy: user.userId,
-      addedByName: user.username,
+      addedByName: user.displayName ?? user.email,
       sortOrder: Math.max(0, ...items.map((it) => it.sortOrder), 0) + 1,
     };
     dispatch({ type: "ADD_ITEM", payload: item });

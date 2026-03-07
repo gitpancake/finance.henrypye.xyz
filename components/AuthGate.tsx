@@ -21,17 +21,13 @@ import { Button } from "@/components/animate-ui/components/buttons/button";
 import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface UserInfo {
-  userId: string;
-  username: string;
-  isAdmin: boolean;
-}
+import type { AuthUser } from "@/contexts/AuthContext";
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<"loading" | "locked" | "unlocked">(
     "loading"
   );
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -45,7 +41,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         if (d.authenticated) {
           setUser({
             userId: d.userId,
-            username: d.username,
+            uid: d.uid,
+            email: d.email,
+            displayName: d.displayName,
+            photoURL: d.photoURL,
             isAdmin: d.isAdmin,
           });
           setStatus("unlocked");
@@ -75,7 +74,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         const d = await res.json();
         setUser({
           userId: d.userId,
-          username: d.username,
+          uid: d.uid,
+          email: d.email,
+          displayName: d.displayName,
+          photoURL: d.photoURL,
           isAdmin: d.isAdmin,
         });
         setStatus("unlocked");

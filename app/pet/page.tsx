@@ -37,7 +37,7 @@ export default function PetPage() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setPlatformUsers(data.map((u: { id: string; username: string }) => ({ value: u.id, label: u.username })));
+          setPlatformUsers(data.map((u: { id: string; username: string; displayName?: string }) => ({ value: u.id, label: u.displayName ?? u.username })));
         }
       })
       .catch(() => {});

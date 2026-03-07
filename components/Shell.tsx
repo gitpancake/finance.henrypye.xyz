@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/constants";
 import CurrencyToggle from "./CurrencyToggle";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import ProfileDialog from "@/components/profile-dialog";
 import {
   Sidebar,
   SidebarContent,
@@ -24,10 +27,23 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeTogglerButton } from "@/components/animate-ui/components/buttons/theme-toggler";
 
+function getInitials(name: string | null, email: string): string {
+  if (name) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email[0]?.toUpperCase() ?? "?";
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { rates, loading, error } = useCurrency();
   const { user, logout } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -82,9 +98,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           )}
           <Separator className="bg-sidebar-border" />
           <div className="px-2 py-1">
-            <div className="text-xs text-sidebar-foreground/70 mb-2">
-              {user.username}
-            </div>
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="flex items-center gap-2 mb-2 w-full text-left hover:opacity-80 transition-opacity"
+            >
+              <Avatar className="size-6">
+                {user.photoURL && (
+                  <AvatarImage src={user.photoURL} alt={user.displayName ?? ""} />
+                )}
+                <AvatarFallback className="text-[10px] bg-sidebar-accent text-sidebar-accent-foreground">
+                  {getInitials(user.displayName, user.email)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs text-sidebar-foreground/70 truncate">
+                {user.displayName ?? user.email}
+              </span>
+            </button>
             <Button
               variant="ghost"
               size="sm"
@@ -120,6 +149,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </header>
         <div className="p-4 lg:p-8">{children}</div>
       </SidebarInset>
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </SidebarProvider>
   );
 }

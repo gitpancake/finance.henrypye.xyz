@@ -12,7 +12,10 @@ const supabase = createClient(
 
 export interface SessionUser {
   id: string;
-  username: string;
+  uid: string;
+  email: string;
+  displayName: string | null;
+  photoURL: string | null;
   isAdmin: boolean;
 }
 
@@ -23,15 +26,25 @@ export async function getSession(): Promise<SessionUser | null> {
 
   try {
     const decoded = await adminAuth.verifyIdToken(token);
+    const userRecord = await adminAuth.getUser(decoded.uid);
 
+    // Still need the UUID from finance_users for FK queries
     const { data, error } = await supabase
       .from("finance_users")
-      .select("id, username, is_admin")
+      .select("id, is_admin")
       .eq("firebase_uid", decoded.uid)
       .single();
 
     if (error || !data) return null;
-    return { id: data.id, username: data.username, isAdmin: data.is_admin };
+
+    return {
+      id: data.id,
+      uid: decoded.uid,
+      email: userRecord.email ?? "",
+      displayName: userRecord.displayName ?? null,
+      photoURL: userRecord.photoURL ?? null,
+      isAdmin: data.is_admin,
+    };
   } catch {
     return null;
   }

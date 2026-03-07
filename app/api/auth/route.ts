@@ -16,11 +16,11 @@ export async function POST(req: Request) {
 
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
+    const userRecord = await adminAuth.getUser(decoded.uid);
 
-    // Look up user by firebase UID
     const { data: user, error } = await supabase
       .from("finance_users")
-      .select("id, username, is_admin")
+      .select("id, is_admin")
       .eq("firebase_uid", decoded.uid)
       .single();
 
@@ -32,7 +32,10 @@ export async function POST(req: Request) {
     return Response.json({
       ok: true,
       userId: user.id,
-      username: user.username,
+      uid: decoded.uid,
+      email: userRecord.email ?? "",
+      displayName: userRecord.displayName ?? null,
+      photoURL: userRecord.photoURL ?? null,
       isAdmin: user.is_admin,
     });
   } catch {
@@ -48,7 +51,10 @@ export async function GET() {
   return Response.json({
     authenticated: true,
     userId: session.id,
-    username: session.username,
+    uid: session.uid,
+    email: session.email,
+    displayName: session.displayName,
+    photoURL: session.photoURL,
     isAdmin: session.isAdmin,
   });
 }
