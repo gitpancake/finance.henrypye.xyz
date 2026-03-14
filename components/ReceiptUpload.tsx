@@ -22,14 +22,15 @@ interface ExtractedItem {
 }
 
 interface ReceiptUploadProps {
-  onAddItems: (items: { name: string; amount: number }[]) => void;
-  onAddGrouped: (name: string, amount: number) => void;
+  onAddItems: (items: { name: string; amount: number }[], date?: string) => void;
+  onAddGrouped: (name: string, amount: number, date?: string) => void;
   defaultCurrency: Currency;
 }
 
 export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrency }: ReceiptUploadProps) {
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
   const [suggestedName, setSuggestedName] = useState("");
+  const [extractedDate, setExtractedDate] = useState<string | undefined>(undefined);
   const [groupedName, setGroupedName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -59,10 +60,11 @@ export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrenc
         throw new Error(data.error || "Failed to extract receipt");
       }
 
-      const { items, suggestedName: suggested } = await res.json();
+      const { items, suggestedName: suggested, date } = await res.json();
       setExtractedItems(items.map((i: { name: string; amount: number }) => ({ ...i, selected: true })));
       setSuggestedName(suggested || "");
       setGroupedName(suggested || "");
+      setExtractedDate(date || undefined);
       setShowPreview(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to process receipt");
@@ -81,13 +83,13 @@ export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrenc
   const handleAddIndividual = () => {
     const selected = extractedItems.filter((i) => i.selected);
     if (selected.length === 0) return;
-    onAddItems(selected.map(({ name, amount }) => ({ name, amount })));
+    onAddItems(selected.map(({ name, amount }) => ({ name, amount })), extractedDate);
     reset();
   };
 
   const handleAddAsGrouped = () => {
     if (!groupedName.trim()) return;
-    onAddGrouped(groupedName.trim(), selectedTotal);
+    onAddGrouped(groupedName.trim(), selectedTotal, extractedDate);
     reset();
   };
 
@@ -95,6 +97,7 @@ export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrenc
     setShowPreview(false);
     setExtractedItems([]);
     setSuggestedName("");
+    setExtractedDate(undefined);
     setGroupedName("");
     setError("");
   };
@@ -130,9 +133,16 @@ export default function ReceiptUpload({ onAddItems, onAddGrouped, defaultCurrenc
               <span className="text-xs font-semibold text-muted-foreground">
                 Extracted Items ({selectedCount}/{extractedItems.length} selected)
               </span>
-              <span className="font-mono text-xs text-muted-foreground">
-                Total: {defaultCurrency} {selectedTotal.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-3">
+                {extractedDate && (
+                  <span className="text-xs text-muted-foreground">
+                    Date: {extractedDate}
+                  </span>
+                )}
+                <span className="font-mono text-xs text-muted-foreground">
+                  Total: {defaultCurrency} {selectedTotal.toFixed(2)}
+                </span>
+              </div>
             </div>
 
             <Table>

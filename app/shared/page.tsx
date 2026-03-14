@@ -277,14 +277,15 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
     dispatch({ type: "UPDATE_ITEM", payload: updated });
   };
 
-  const handleReceiptItems = (extracted: { name: string; amount: number }[]) => {
+  const handleReceiptItems = (extracted: { name: string; amount: number }[], date?: string) => {
+    const itemDate = date || new Date().toISOString().slice(0, 10);
     const newItems: SharedItem[] = extracted.map((e, i) => ({
       id: crypto.randomUUID(),
       categoryId,
       name: e.name,
       amount: Math.abs(e.amount),
       currency: category.currency,
-      date: new Date().toISOString().slice(0, 10),
+      date: itemDate,
       notes: "",
       addedBy: user.userId,
       addedByName: user.displayName ?? user.email,
@@ -293,14 +294,14 @@ function CategoryDetail({ categoryId, onBack }: { categoryId: string; onBack: ()
     dispatch({ type: "ADD_ITEMS", payload: { categoryId, items: newItems } });
   };
 
-  const handleReceiptGrouped = (name: string, amount: number) => {
+  const handleReceiptGrouped = (name: string, amount: number, date?: string) => {
     const item: SharedItem = {
       id: crypto.randomUUID(),
       categoryId,
       name,
       amount: Math.abs(amount),
       currency: category.currency,
-      date: new Date().toISOString().slice(0, 10),
+      date: date || new Date().toISOString().slice(0, 10),
       notes: "",
       addedBy: user.userId,
       addedByName: user.displayName ?? user.email,
