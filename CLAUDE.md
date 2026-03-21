@@ -14,14 +14,15 @@ npm run lint         # ESLint
 
 ### Auth Flow
 
-1. User submits username/password to `POST /api/auth`
-2. Server looks up user in `finance_users`, compares bcrypt hash
-3. On first-ever login (0 users), auto-creates admin from `AUTH_USERNAME`/`AUTH_PASSWORD` env vars and backfills all existing data with that admin's `user_id`
-4. Cookie `finance-auth` set to `user:<uuid>` (httpOnly, 30-day TTL)
-5. `GET /api/auth` reads cookie, looks up user, returns `{ authenticated, userId, username, isAdmin }`
-6. `DELETE /api/auth` clears cookie (logout)
+1. User authenticates via Firebase Authentication (email/password)
+2. Firebase UID is linked to a `finance_users` profile in Supabase
+3. Legacy path: `POST /api/auth` with username/password, bcrypt comparison against `finance_users`
+4. On first-ever login (0 users), auto-creates admin from `AUTH_USERNAME`/`AUTH_PASSWORD` env vars and backfills existing data
+5. Cookie `finance-auth` set to `user:<uuid>` (httpOnly, 30-day TTL)
+6. `GET /api/auth` reads cookie, looks up user, returns `{ authenticated, userId, username, isAdmin }`
+7. `DELETE /api/auth` clears cookie (logout)
 
-Key files: `lib/auth.ts` (session helpers), `app/api/auth/route.ts` (login/logout/check), `contexts/AuthContext.tsx` (client-side context), `components/AuthGate.tsx` (gate + provider nesting)
+Key files: `lib/auth.ts` (session helpers), `lib/firebase.ts` (client Firebase), `lib/firebase-admin.ts` (server Firebase Admin), `lib/firebase-users.ts` (Firebase user management), `app/api/auth/route.ts` (login/logout/check), `contexts/AuthContext.tsx` (client-side context), `components/AuthGate.tsx` (gate + provider nesting)
 
 ### Provider Nesting
 
@@ -54,30 +55,51 @@ All Supabase queries include `.eq("user_id", userId)` for data isolation.
 ```
 app/                  # Next.js App Router pages
   [section]/page.tsx  # Each tab is a client component page
-  admin/page.tsx      # Admin user management (admin only)
+  shared/page.tsx     # Shared expense categories
+  settings/page.tsx   # Wallet address management
   api/
     auth/route.ts     # Login, session check, logout
-    admin/users/      # Admin CRUD for users
+    users/route.ts    # User management
     report/route.ts   # AI report generation (auth-protected)
+    nfts/             # NFT data from OpenSea
+    wallets/balances/ # On-chain wallet balance lookups
+    shared/extract/   # Receipt image date extraction (AI)
 components/           # Reusable UI components
   EditableTable.tsx   # Generic CRUD table (used by most pages)
   Shell.tsx           # Sidebar nav + user info + logout
   AuthGate.tsx        # Auth gate + provider nesting
   SummaryCard.tsx     # Dashboard summary cards
   CurrencyToggle.tsx  # Currency selector
+  CurrencyBadge.tsx   # Currency display badge
+  NetWorthBar.tsx     # Dashboard net worth visualization
+  ReceiptUpload.tsx   # Receipt image upload with AI date extraction
+  profile-dialog.tsx  # User profile editing dialog
+  ui/                 # shadcn/ui primitives
+  animate-ui/         # Animated UI components
 contexts/
   AuthContext.tsx      # User info + logout (useAuth hook)
   FinanceContext.tsx   # Main state (reducer + Supabase persistence, userId-scoped)
   CurrencyContext.tsx  # Exchange rates + conversion helpers
+  SharedContext.tsx    # Shared expense categories + items
 lib/
   auth.ts             # Server-side session helpers (getSession, setSession, clearSession)
+  firebase.ts         # Client-side Firebase init
+  firebase-admin.ts   # Server-side Firebase Admin SDK
+  firebase-users.ts   # Firebase user management helpers
   types.ts            # All TypeScript interfaces
   constants.ts        # Currencies, tax brackets, nav items, default state
   supabase.ts         # DB client, mapping helpers, CRUD functions (all userId-scoped)
+  shared-supabase.ts  # Shared category/item Supabase operations
+  opensea.ts          # OpenSea NFT API integration
+  storage.ts          # Supabase Storage helpers (avatars, receipts)
+  subscriptions.ts    # Subscription-related helpers
   format.ts           # formatMoney, formatMoneyShort, formatCrypto
   tax.ts              # Canadian tax calculation logic
   currency.ts         # Exchange rate fetching
-migrations/           # SQL migration files (run in order)
+  utils.ts            # General utilities (cn helper)
+  get-strict-context.tsx # Strict context hook factory
+  actions/            # Server actions (profile updates)
+migrations/           # SQL migration files (run in order, 001-019)
 ```
 
 ### Adding a New Data Section
@@ -105,18 +127,22 @@ Family debts, pet expenses, and family owed are intentionally excluded from all 
 
 | Table | Maps to | Notes |
 |-------|---------|-------|
-| `finance_users` | — | Auth table (bcrypt hashed passwords) |
+| `finance_users` | — | Auth table (Firebase UID linked) |
 | `finance_accounts` | `Account` | Bank accounts + credit cards |
-| `finance_debts` | `Debt` | Personal debts |
+| `finance_debts` | `Debt` | Personal debts (with paid-off flag) |
 | `finance_family_debts` | `FamilyDebt` | Excluded from dashboard totals |
-| `finance_crypto_holdings` | `CryptoHolding` | ETH, USDC |
+| `finance_crypto_holdings` | `CryptoHolding` | ETH, USDC, GBPe |
 | `finance_incomings` | `Incoming` | pending/received status |
-| `finance_budget_line_items` | `BudgetLineItem` | Grouped by month in app |
-| `finance_annual_subscriptions` | `AnnualSubscription` | With renewal dates |
+| `finance_budget_line_items` | `BudgetLineItem` | Grouped by month, recurring support |
+| `finance_annual_subscriptions` | `AnnualSubscription` | With renewal dates + account linking |
 | `finance_pet_expenses` | `PetExpense` | Excluded from dashboard totals |
 | `finance_family_owed` | `FamilyOwed` | Tracks amount/paid/remaining |
+| `finance_wallet_addresses` | `WalletAddress` | For on-chain balance lookups |
+| `finance_shared_categories` | — | Shared expense categories |
+| `finance_shared_category_members` | — | Category membership |
+| `finance_shared_items` | — | Shared items with receipt support |
 
-DB uses snake_case, TypeScript uses camelCase. Mapping is handled by `toX`/`fromX` helpers in `supabase.ts`. All data tables have `user_id` FK for per-user isolation.
+DB uses snake_case, TypeScript uses camelCase. Mapping is handled by `toX`/`fromX` helpers in `supabase.ts`. All data tables have `user_id` FK for per-user isolation. RLS is enabled on all tables (migration 018).
 
 ### Styling Conventions
 
@@ -125,7 +151,9 @@ DB uses snake_case, TypeScript uses camelCase. Mapping is handled by `toX`/`from
 - Financial numbers: `font-mono` with `text-positive` / `text-negative`
 - Sidebar: `bg-zinc-900` with active state `bg-zinc-800 text-white`
 - Tables use the `.sheet` CSS class from `globals.css`
+- UI primitives from shadcn/ui (`components/ui/`)
+- Animated components from animate-ui (`components/animate-ui/`)
 
 ### Currencies
 
-Supported: CAD, USD, GBP, EUR. Crypto: ETH, USDC. Rates fetched on mount and cached in localStorage. Display currency toggleable by user.
+Supported: CAD, USD, GBP, EUR. Crypto: ETH, USDC, GBPe. Rates fetched on mount and cached in localStorage. Display currency toggleable by user.
