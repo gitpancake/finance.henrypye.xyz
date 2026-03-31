@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- "f" character -->
+  <text x="145" y="395" font-family="ui-monospace, 'Geist Mono', 'SF Mono', Menlo, monospace" font-size="380" font-weight="700" fill="#fafafa" letter-spacing="-10">f</text>
+  <!-- dot/period accent -->
+  <circle cx="370" cy="370" r="36" fill="#10b981"/>
+</svg>

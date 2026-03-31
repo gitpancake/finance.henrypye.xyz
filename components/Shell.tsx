@@ -66,9 +66,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     >
       <Sidebar>
         <SidebarHeader className="px-5 py-5">
-          <h1 className="font-mono text-sm font-bold text-sidebar-primary tracking-tight">
-            finance.
-          </h1>
+          <Link href="/" className="font-mono text-sm font-bold text-sidebar-primary tracking-tight hover:opacity-80 transition-opacity">
+            finance<span className="text-emerald-500">.</span>
+          </Link>
         </SidebarHeader>
         <SidebarContent>
           {navGroups.map((group, i) => (
@@ -129,6 +129,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <header className="flex items-center justify-between border-b px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="h-4 hidden sm:block" />
+            <Link href="/" className="hidden sm:flex items-center gap-0.5">
+              <span className="font-mono text-sm font-bold tracking-tight">finance</span>
+              <span className="font-mono text-sm font-bold text-emerald-500">.</span>
+            </Link>
             <div>
               {loading && (
                 <span className="text-xs text-muted-foreground">
